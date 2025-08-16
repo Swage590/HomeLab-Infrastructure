@@ -1,0 +1,2 @@
+- name: Make sure that the database is up and running
+  include_tasks: data-playbook.yaml

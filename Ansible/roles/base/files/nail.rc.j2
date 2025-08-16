@@ -1,0 +1,5 @@
+# s-nail configuration to send mail via SMTP
+set smtp=smtp://{{ smtp_server }}:25
+set smtp-auth=none
+set from="System@{{ inventory_hostname }}.{{ tld_domain }}"
+set realname="{{ inventory_hostname }} System"

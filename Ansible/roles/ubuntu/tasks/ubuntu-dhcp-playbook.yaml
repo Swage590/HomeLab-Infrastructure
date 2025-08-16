@@ -1,0 +1,29 @@
+- name: Copy over Network Configuration
+  notify: Apply netplan
+  ansible.builtin.copy:
+    src: files/01-netcfg.yaml
+    dest: /etc/netplan/01-netcfg.yaml
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Check if the file exists
+  ansible.builtin.stat:
+    path: /etc/netplan/50-cloud-init.yaml
+  register: cloud_init_netplan
+
+- name: Backup the cloud init net config file if it's there
+  when: cloud_init_netplan.stat.exists
+  ansible.builtin.copy:
+    src: /etc/netplan/50-cloud-init.yaml
+    dest: /etc/netplan/50-cloud-init.yaml.old
+    remote_src: true
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Remove the cloud init net config file if it's there
+  when: cloud_init_netplan.stat.exists
+  ansible.builtin.file:
+    path: /etc/netplan/50-cloud-init.yaml
+    state: absent

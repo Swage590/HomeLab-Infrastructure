@@ -1,0 +1,11 @@
+docker_projects:
+  - name: nginx-lb
+    files:
+      - src: files/nginx.conf
+        dest: nginx.conf
+      - src: "files/[nginx-lb] docker-compose.yaml"
+        dest: docker-compose.yaml
+  - name: MariaDB
+    files:
+      - src: "files/[MariaDB] docker-compose.yaml"
+        dest: docker-compose.yaml

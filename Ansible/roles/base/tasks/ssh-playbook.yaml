@@ -1,0 +1,13 @@
+- name: Ensure the user's .ssh directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ssh_user }}/.ssh"
+    state: directory
+    owner: "{{ ssh_user }}"
+    group: "{{ ssh_user }}"
+    mode: '0700'
+
+- name: Add my SSH public key
+  ansible.builtin.authorized_key:
+    user: "{{ ssh_user }}"
+    key: "{{ ssh_public_key }}"
+    state: present

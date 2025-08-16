@@ -1,0 +1,20 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US
+  keyboard:
+    layout: us
+  identity:
+    hostname: ubuntu-template
+    username: swage
+    password: "$6$0wPshdMiWPm1ZTR4$gIntFnpWzP.6m1xq/2p3.Rx/BilU7OxeWiVOhw37SzJxGnsWOHCG0yZFeEE9rgoXodlPoFwl5MYoaJWD9T0HW/" # generated with `mkpasswd --method=SHA-512`
+  ssh:
+    install-server: true
+    authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDZ2Hp3Ahc8IS/jbWFd4cn67f7XLUCh3Ku0TyebNG0/Dn/zdjH5HGUQlDaXRclI8gqX4nTCqZYQBkdklg5axmHQVvJ+GouuOVHKKNiU0HdBpfWWJp3qPuA/EGy8NZG5a/qErY55igcbQ6w0outSU2GcwwZSTnk3vqSTcW99VYxvkZN8b+w+R/OQzs1ADMVqRTkn4OnxpGoLbDU+CeThqplKPjDFyIDw8gRG6EBmaqJUyZ9QfexPBo+PDwtrJckojXXn0oX+JbazQ6GOawKkvmXAJSQsoyWnSmEl1u/fRglD5zSxnYUTRGfG6Atg3pS3dg0GEo7QMXI1oZLzt3+xNC7z
+  storage:
+    layout:
+      name: lvm
+  packages: []
+  user-data:
+    disable_root: false

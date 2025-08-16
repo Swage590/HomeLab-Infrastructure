@@ -1,0 +1,57 @@
+- name: Ensure Python 3 is installed
+  ansible.builtin.apt:
+    name: python3
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Ensure Python venv package is installed
+  ansible.builtin.apt:
+    name: python3-venv
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Create application directory
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Create Python virtual environment
+  ansible.builtin.command: python3 -m venv "{{ venv_dir }}"
+  args:
+    creates: "{{ venv_dir }}/bin/activate"
+
+- name: Copy application Python file
+  ansible.builtin.template:
+    src: files/smtp2webhook.py.j2
+    dest: "{{ app_dir }}/smtp2webhook.py"
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy requirements.txt
+  ansible.builtin.copy:
+    src: files/requirements.txt
+    dest: "{{ app_dir }}/requirements.txt"
+    mode: '0644'
+
+- name: Install Python dependencies in venv
+  ansible.builtin.pip:
+    requirements: "{{ app_dir }}/requirements.txt"
+    virtualenv: "{{ venv_dir }}"
+
+- name: Copy systemd service file
+  ansible.builtin.copy:
+    src: files/smtp2webhook.service
+    dest: /etc/systemd/system/{{ service_name }}
+    mode: '0644'
+
+- name: Reload systemd to read new service file
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start service
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+    enabled: true
+    state: started

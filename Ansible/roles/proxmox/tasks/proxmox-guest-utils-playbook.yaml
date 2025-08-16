@@ -1,0 +1,4 @@
+- name: Ensure qemu-guest-agent is installed
+  ansible.builtin.package:
+    name: qemu-guest-agent
+    state: present

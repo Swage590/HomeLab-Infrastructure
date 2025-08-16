@@ -1,0 +1,87 @@
+services:
+  radarr:
+    container_name: radarr
+    image: ghcr.io/hotio/radarr:latest
+    restart: unless-stopped
+    logging:
+      driver: json-file
+    ports:
+      - 7878:7878
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - "{{ servarr_config_dir }}/radarr:/config"
+      - "{{ servarr_media_dir }}:/data/media"
+  sonarr:
+    container_name: sonarr
+    image: ghcr.io/hotio/sonarr:latest
+    restart: unless-stopped
+    logging:
+      driver: json-file
+    ports:
+      - 8989:8989
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - "{{ servarr_config_dir }}/sonarr:/config"
+      - "{{ servarr_media_dir }}:/data/media"
+  prowlarr:
+    container_name: prowlarr
+    image: ghcr.io/hotio/prowlarr
+    ports:
+      - "9696:9696"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+      - TZ=America/New_York
+    volumes:
+      - "{{ servarr_config_dir }}/prowlarr:/config"
+    restart: unless-stopped
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=America/New_York
+    ports:
+      - "${PORT:-8191}:8191"
+    restart: unless-stopped
+  emby:
+    image: emby/embyserver
+    container_name: embyserver
+    environment:
+      - UID=1000 # The UID to run emby as (default: 2)
+      - GID=1000 # The GID to run emby as (default 2)
+    volumes:
+      - /docker/appdata/emby:/config # DO NOT CHANGE, BREAKS IF ON SMB SHARE FOR SOME REASON
+      - "{{ servarr_media_dir }}:/mnt/share1" # Media directory
+    ports:
+      - 8096:8096 # HTTP port
+      - 8920:8920 # HTTPS port
+    restart: unless-stopped
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      - WEBUI_PORT=8080
+      - TORRENTING_PORT=6881
+    volumes:
+      - "{{ servarr_config_dir }}/qbittorrent:/config"
+      - "{{ servarr_media_dir }}:/data/media"
+    ports:
+      - 8080:8080
+      - 6881:6881
+      - 6881:6881/udp
+    restart: unless-stopped

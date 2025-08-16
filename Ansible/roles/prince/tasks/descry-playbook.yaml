@@ -1,0 +1,5 @@
+- name: Launch Descry Installer/Update Script
+  ansible.builtin.script: files/descry.sh
+  args: 
+    chdir: "/home/{{ ansible_user }}/"
+    creates: "/home/{{ ansible_user }}/descry.tech"

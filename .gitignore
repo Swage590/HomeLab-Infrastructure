@@ -1,0 +1,7 @@
+terraform.tfstate
+terraform.tfstate.backup
+Terraform/.terraform/
+Ansible/.ansible/
+Ansible/.vscode/
+.ansible/.lock
+Terraform/.terraform.lock.hcl

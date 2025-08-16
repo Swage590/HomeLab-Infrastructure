@@ -1,0 +1,9 @@
+servarr_config_dir: /mnt/main/Home-Lab/Virtual-Servers/servarr/config
+servarr_media_dir: "/mnt/main/Media/TV & Movies"
+
+app_name: smtp2webhook
+app_dir: /opt/smtp2webhook
+venv_dir: "{{ app_dir }}/venv"
+service_name: smtp2webhook.service
+
+discord_webhook_url: https://discord.com/api/webhooks/example/example

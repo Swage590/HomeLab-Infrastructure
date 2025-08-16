@@ -1,0 +1,64 @@
+    - name: Install dependencies
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: true
+
+    - name: Ensure /etc/apt/keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker Ubuntu GPG key if missing
+      ansible.builtin.command:
+        cmd: curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+      args:
+        creates: /etc/apt/keyrings/docker.asc
+
+    - name: Convert Docker GPG key to binary format
+      ansible.builtin.command:
+        cmd: gpg --dearmor -o /etc/apt/keyrings/docker.gpg /etc/apt/keyrings/docker.asc
+      args:
+        creates: /etc/apt/keyrings/docker.gpg
+
+    - name: Add Docker APT repository
+      ansible.builtin.apt_repository:
+        repo: >
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
+          https://download.docker.com/linux/ubuntu
+          {{ ansible_lsb.codename }} stable
+        state: present
+        filename: docker
+
+    - name: Install Docker Engine
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker is started and enabled
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Add users to Docker group
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: true
+
+    - name: Wait for Docker socket to become available
+      ansible.builtin.wait_for:
+        path: /var/run/docker.sock
+        state: present
+        timeout: 30

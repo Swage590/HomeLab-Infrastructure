@@ -1,0 +1,22 @@
+- name: Ensure destination directory exists
+  ansible.builtin.file:
+    path: "/usr/local/share/ca-certificates"
+    state: directory
+    mode: '0755'
+
+- name: Copy the root certificate to the remote system
+  ansible.builtin.copy:
+    src: "{{ local_cert_path }}"
+    dest: "{{ remote_cert_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Update CA certificates
+  ansible.builtin.command: update-ca-certificates
+  register: update_result
+  changed_when: update_result.stdout | regex_search('([1-9][0-9]*) (added|done)', multiline=False) is not none
+
+- name: Display result of update-ca-certificates
+  ansible.builtin.debug:
+    var: update_result.stdout

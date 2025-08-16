@@ -1,0 +1,26 @@
+- name: Ensure project directories exist
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/{{ item.name }}/"
+    state: directory
+  loop: "{{ docker_projects }}"
+
+- name: Copy project files
+  ansible.builtin.copy:
+    src: "{{ subitem.src }}"
+    dest: "/home/{{ ansible_user }}/{{ item.name }}/{{ subitem.dest }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '664'
+  loop: "{{ docker_projects | subelements('files') }}"
+  loop_control:
+    loop_var: item_pair
+  vars:
+    item: "{{ item_pair.0 }}"
+    subitem: "{{ item_pair.1 }}"
+
+- name: Ensure Docker Compose projects are running
+  community.docker.docker_compose_v2:
+    project_src: "/home/{{ ansible_user }}/{{ item.name }}/"
+    state: present
+    pull: always
+  loop: "{{ docker_projects }}"

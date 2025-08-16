@@ -1,0 +1,22 @@
+- name: Ensure systemd-resolved is installed and enabled
+  ansible.builtin.apt:
+    name: systemd
+    state: present
+  when: ansible_service_mgr == "systemd"
+
+- name: Configure DNS in /etc/systemd/resolved.conf
+  ansible.builtin.blockinfile:
+    path: /etc/systemd/resolved.conf
+    marker: "# {mark} ANSIBLE MANAGED DNS BLOCK"
+    block: |
+      [Resolve]
+      DNS={{ dns_servers | join(" ") }}
+      FallbackDNS={{ fallback_dns_servers | join(" ") }}
+      DNSStubListener=yes
+  notify: Restart systemd-resolved
+
+- name: Ensure systemd-resolved service is enabled and running
+  ansible.builtin.systemd:
+    name: systemd-resolved
+    state: started
+    enabled: true

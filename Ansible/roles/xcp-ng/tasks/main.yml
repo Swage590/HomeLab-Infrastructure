@@ -1,0 +1,2 @@
+- name: Install Hypervisor Guest Utilities are installed
+  include_tasks: xcp-ng-guest-utils-playbook.yaml

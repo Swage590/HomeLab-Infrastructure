@@ -1,0 +1,4 @@
+- name: Ensure xe Guest Utilities is installed
+  ansible.builtin.package:
+    name: xe-guest-utilities
+    state: present

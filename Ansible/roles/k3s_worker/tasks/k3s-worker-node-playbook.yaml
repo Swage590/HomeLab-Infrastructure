@@ -1,0 +1,11 @@
+    - name: Check if k3s is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_binary
+
+    - name: Install k3s if not installed
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | K3S_URL=https://{{ k3s_tls_san }}:6443 K3S_TOKEN={{ k3s_token }} sh -
+      environment:
+        K3S_DATASTORE_ENDPOINT: "{{ k3s_datastore_endpoint }}"
+      when: not k3s_binary.stat.exists

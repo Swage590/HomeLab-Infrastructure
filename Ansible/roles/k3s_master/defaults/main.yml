@@ -1,0 +1,3 @@
+k3s_datastore_endpoint: "mysql://user:password@tcp(endpoint:3306)/database"
+k3s_token: "example-token"
+k3s_tls_san: "load-balancer-ip-or-hostname"

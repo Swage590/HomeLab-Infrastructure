@@ -1,0 +1,35 @@
+- name: Create the user account
+  ansible.builtin.user:
+    name: "{{ base_user }}"
+    groups: "{{ 'wheel' if ansible_facts['os_family'] == 'RedHat' else 'sudo' }}"
+    append: true
+    comment: "New user account"
+    shell: /bin/bash
+    state: present
+    create_home: true
+    password: "{{ ansible_become_password | password_hash('sha512') }}"
+    update_password: on_create
+
+- name: Copy default skel files to the new user's home
+  ansible.builtin.copy:
+    src: /etc/skel
+    dest: /home/{{ base_user }}
+    owner: "{{ base_user }}"
+    group: "{{ base_user }}"
+    mode: '0644'
+    remote_src: true
+    force: false
+
+- name: Ensure the user's .ssh directory exists
+  ansible.builtin.file:
+    path: "/home/{{ base_user }}/.ssh"
+    state: directory
+    owner: "{{ base_user }}"
+    group: "{{ base_user }}"
+    mode: '0700'
+
+- name: Add the SSH public key for the user
+  ansible.builtin.authorized_key:
+    user: "{{ base_user }}"
+    key: "{{ ssh_public_key }}"
+    state: present

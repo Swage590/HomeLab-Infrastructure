@@ -1,0 +1,20 @@
+- name: Configure Hostname & Domain Name
+  ansible.builtin.include_tasks: hostname-playbook.yaml
+
+- name: Configure Trusted Certificates
+  ansible.builtin.include_tasks: certificate-playbook.yaml
+
+- name: Configure DNS
+  ansible.builtin.include_tasks: dns-playbook.yaml
+
+- name: Set logon Splashscreen
+  ansible.builtin.include_tasks: logon-splashscreen-playbook.yaml
+
+- name: Configure Email
+  ansible.builtin.include_tasks: mailx-playbook.yaml
+
+- name: Ensure Auto-Update is Configured
+  ansible.builtin.include_tasks: unattended-upgrades-playbook.yaml
+
+- name: Ensure Configuration of {{ base_user }}
+  ansible.builtin.include_tasks: user-playbook.yaml

@@ -1,0 +1,14 @@
+[Unit]
+Description=SMTP to Webhook Service
+After=network.target
+
+[Service]
+ExecStart=/opt/smtp2webhook/venv/bin/python3 /opt/smtp2webhook/smtp2webhook.py
+WorkingDirectory=/opt/smtp2webhook/
+StandardOutput=journal
+StandardError=journal
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,2 @@
+- name: Install and Deploy k3s for the MASTER
+  include_tasks: k3s-master-node-playbook.yaml

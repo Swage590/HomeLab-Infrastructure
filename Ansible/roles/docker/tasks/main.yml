@@ -1,0 +1,5 @@
+- name: Install and Run Post Install for Docker
+  include_tasks: docker-install-playbook.yaml
+
+- name: Deploy Watchtower Container to AutoUpdate Containers
+  include_tasks: watchtower-playbook.yaml

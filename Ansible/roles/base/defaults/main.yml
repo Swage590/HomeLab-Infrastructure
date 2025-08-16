@@ -1,0 +1,21 @@
+cert_filename: "swage.crt"
+local_cert_path: "files/{{ cert_filename }}"
+remote_cert_path: "/usr/local/share/ca-certificates/{{ cert_filename }}"
+
+smtp_server: "Prince.Swage"
+smtp_port: 25
+
+dns_servers:
+  - "10.59.20.1"
+fallback_dns_servers:
+  - "1.1.1.1"
+  - "8.8.8.8"
+
+unattended_config_src: "files/50unattended-upgrades.js.j2"
+unattended_config_dest: "/etc/apt/apt.conf.d/50unattended-upgrades"
+tld_domain: Swage
+email_domain: swages.cloud
+
+
+base_user: swage
+ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHNVigjWD/3m7VN4DxPG8nadvsq6eBb/NBNH0iomRVih"

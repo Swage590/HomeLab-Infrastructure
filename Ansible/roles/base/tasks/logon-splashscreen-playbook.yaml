@@ -1,0 +1,23 @@
+- name: Copy the SPLASHTEXT script
+  ansible.builtin.copy:
+    src: files/swage-banner.sh
+    dest: /etc/profile.d/swage-banner.sh
+    owner: root
+    group: root
+    mode: '660'
+
+- name: Copy the list of fav fonts
+  ansible.builtin.copy:
+    src: files/fontlist
+    dest: /etc/profile.d/fontlist
+    owner: root
+    group: root
+    mode: '664'
+
+- name: Copy the figurine binary
+  ansible.builtin.copy:
+    src: files/figurine
+    dest: /bin/figurine
+    owner: root
+    group: root
+    mode: '775'

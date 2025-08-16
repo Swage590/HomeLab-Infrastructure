@@ -1,0 +1,111 @@
+import asyncio
+import sys
+import requests
+from email.parser import Parser
+from aiosmtpd.controller import Controller
+from aiosmtpd.handlers import AsyncMessage
+from email.message import EmailMessage
+
+WEBHOOK_URL = '{{ discord_webhook_url }}'
+
+class WebhookHandler(AsyncMessage):
+    async def handle_message(self, message: EmailMessage):
+        mailfrom = message.get('From', '')
+        rcpttos = message.get_all('To', [])
+        subject = message.get('Subject', '')
+
+        # Combine all parts of the message payload
+        if message.is_multipart():
+            body = ''
+            for part in message.walk():
+                if part.get_content_type() == 'text/plain':
+                    body += part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', errors='replace')
+        else:
+            body = message.get_payload(decode=True).decode(message.get_content_charset() or 'utf-8', errors='replace')
+
+        print(f'Received email from: {mailfrom}')
+        print(f'Recipients: {rcpttos}')
+
+        email_data = {
+            'content': f"**From:** {mailfrom}\n**To:** {', '.join(rcpttos)}\n**Subject:** {subject}\n\n{body}"
+        }
+
+        print(email_data)
+
+        # Send to Discord webhook
+        try:
+            response = requests.post(WEBHOOK_URL, json=email_data)
+            if response.status_code == 200:
+                print('Email successfully forwarded to webhook.')
+            else:
+                print(f'Failed to forward email: {response.status_code}')
+        except Exception as e:
+            print(f'Error sending to webhook: {e}')
+
+if __name__ == "__main__":
+    handler = WebhookHandler()
+    controller = Controller(handler, hostname='0.0.0.0', port=25)
+
+    try:
+        print('SMTP Server listening on port 25...')
+        controller.start()
+        asyncio.get_event_loop().run_forever()
+    except KeyboardInterrupt:
+        print('\nServer shutting down...')
+        controller.stop()
+        sys.exit()
+import asyncio
+import requests
+from email.parser import Parser
+from aiosmtpd.controller import Controller
+from aiosmtpd.handlers import AsyncMessage
+from email.message import EmailMessage
+
+WEBHOOK_URL = '{{ discord_webhook_url }}'
+
+class WebhookHandler(AsyncMessage):
+    async def handle_message(self, message: EmailMessage):
+        mailfrom = message.get('From', '')
+        rcpttos = message.get_all('To', [])
+        subject = message.get('Subject', '')
+
+        # Combine all parts of the message payload
+        if message.is_multipart():
+            body = ''
+            for part in message.walk():
+                if part.get_content_type() == 'text/plain':
+                    body += part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', errors='replace')
+        else:
+            body = message.get_payload(decode=True).decode(message.get_content_charset() or 'utf-8', errors='replace')
+
+        print(f'Received email from: {mailfrom}')
+        print(f'Recipients: {rcpttos}')
+
+        email_data = {
+            'content': f"**From:** {mailfrom}\n**To:** {', '.join(rcpttos)}\n**Subject:** {subject}\n\n{body}"
+        }
+
+        print(email_data)
+
+        # Send to Discord webhook
+        try:
+            response = requests.post(WEBHOOK_URL, json=email_data)
+            if response.status_code == 204:
+                print('Email successfully forwarded to webhook.')
+            else:
+                print(f'Failed to forward email: {response.status_code}')
+        except Exception as e:
+            print(f'Error sending to webhook: {e}')
+
+if __name__ == "__main__":
+    handler = WebhookHandler()
+    controller = Controller(handler, hostname='0.0.0.0', port=25)
+
+    try:
+        print('SMTP Server listening on port 25...')
+        controller.start()
+        asyncio.get_event_loop().run_forever()
+    except KeyboardInterrupt:
+        print('\nServer shutting down...')
+        controller.stop()
+        sys.exit()

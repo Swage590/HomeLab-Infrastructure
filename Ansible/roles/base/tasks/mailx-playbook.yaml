@@ -1,0 +1,44 @@
+- name: Ensure mailutils is uninstalled
+  ansible.builtin.package:
+    name: mailutils
+    state: absent
+
+- name: Ensure sendmail is uninstalled
+  ansible.builtin.package:
+    name: sendmail-base
+    state: absent
+
+- name: Delete the sendmail file
+  ansible.builtin.file:
+    path: /usr/sbin/sendmail
+    state: absent
+
+- name: Check for sendmail
+  register: sendmail
+  ansible.builtin.stat:
+    path: /usr/sbin/sendmail
+
+- name: Fail if sendmail is still present on host
+  when: sendmail.stat.exists
+  ansible.builtin.fail:
+    msg: "This host still has sendmail installed!"
+
+- name: Install s-nail
+  ansible.builtin.package:
+    name: s-nail
+    state: present
+
+- name: Deploy s-nail configuration
+  ansible.builtin.template:
+    src: files/s-nail.rc.j2
+    dest: /etc/s-nail.rc
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create symbolic link /usr/bin/mail -> /usr/bin/s-nail
+  ansible.builtin.file:
+    src: /usr/bin/s-nail
+    dest: /usr/bin/mailx
+    state: link
+    force: true
