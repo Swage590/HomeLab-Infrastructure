@@ -6,11 +6,15 @@ terraform {
     onepassword = {
       source = "1Password/onepassword"
     }
+    unifi = {
+      source = "ubiquiti-community/unifi"
+      version = "0.41.3"
+    }
   }
 }
 
 provider "onepassword" {
-  op_cli_path = "/mnt/c/Users/Swage/AppData/Local/Microsoft/WinGet/Packages/AgileBits.1Password.CLI_Microsoft.Winget.Source_8wekyb3d8bbwe/./terraform-op.sh"
+  account = "my.1password.com"
 }
 
 data "onepassword_item" "xo_creds" {
@@ -18,8 +22,18 @@ data "onepassword_item" "xo_creds" {
   title = "Xen Orchestra 5 XO-CE"   # title of the item in 1Password
 }
 
-# This allows me to do the oneliner lookup for the url in the provider section
+variable "vm_count" {
+  description = "Number of Ubuntu VMs to create"
+  type        = number
+  default     = 3
+}
+
+# Pre define VM mac, then declare the 1pass thing for a oneliner lookup
 locals {
+  vm_macs = [
+    for i in range(var.vm_count) :
+    format("02:00:00:%02x:%02x:%02x", 10, 20, i)
+  ]
   sections = {
     for section in data.onepassword_item.xo_creds.section :
     section.label => {
@@ -45,8 +59,36 @@ provider "xenorchestra" {
   insecure = true
 }
 
+data "onepassword_item" "unifi_creds" {
+  vault = "Home Lab"         # name or UUID of the vault
+  title = "Terraform Unifi"   # title of the item in 1Password
+}
+
+provider "unifi" {
+  username       = data.onepassword_item.unifi_creds.username
+  password       = data.onepassword_item.unifi_creds.password
+  api_url        = data.onepassword_item.unifi_creds.url
+
+  allow_insecure = true
+}
+
+data "unifi_network" "lan" {
+  name = "Main" # this must match the name of your LAN network in the UniFi controller
+}
+
+resource "unifi_user" "ubuntu_vm" {
+  count      = var.vm_count
+
+  mac        = local.vm_macs[count.index]
+  name       = "Ubuntu-25-Template${count.index + 1}"
+  fixed_ip   = cidrhost("10.59.20.0/24", 200 + count.index) # example: 192.168.1.50, .51, etc.
+  network_id = data.unifi_network.lan.id
+  note       = "Managed by Terraform"
+  local_dns_record = "Ubuntu-25-Template${count.index + 1}.Swage"
+}
+
 resource "xenorchestra_vm" "ubuntu_vm" {
-  count             = 3
+  count             = var.vm_count
   name_label        = "Ubuntu-25-Template${count.index + 1}"
   memory_max        = 17179869184 # 16 GB in bytes
   cpus              = 2
@@ -64,6 +106,7 @@ resource "xenorchestra_vm" "ubuntu_vm" {
 
   network {
     network_id = "6545157d-63ee-92e2-8748-ca5db513ac3b" # Network UUID
+    mac_address = local.vm_macs[count.index]
   }
 
   cloud_config = <<EOF

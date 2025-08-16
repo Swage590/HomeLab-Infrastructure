@@ -1,9 +1,9 @@
 # # Initial Wave of Configuration
 
-- hosts: all
-  roles:
-    - role: base
-      become: true
+# - hosts: all
+#   roles:
+#     - role: base
+#       become: true
 #     - role: sharedrive
 #       become: true
 
@@ -41,10 +41,10 @@
 
 # # Host Specific Configurations
 
-# - hosts: Prince
-#   roles:
-#     - role: prince
-#       become: true
+- hosts: Prince
+  roles:
+    - role: prince
+      become: true
 
 # - hosts: Data
 #   roles:

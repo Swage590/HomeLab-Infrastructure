@@ -1,8 +1,8 @@
 - name: Deploy Servarr Stack
-  include_tasks: servarr-playbook.yaml
+  ansible.builtin.include_tasks: servarr-playbook.yaml
 
 - name: Deploy smtp2webhook python service
-  include_tasks: smtp2webhook-playbook.yaml
+  ansible.builtin.include_tasks: smtp2webhook-playbook.yaml
 
 - name: Deploy Descry Docker Container
-  include_tasks: descry-playbook.yaml
+  ansible.builtin.include_tasks: descry-playbook.yaml

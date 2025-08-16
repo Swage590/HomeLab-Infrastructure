@@ -1,7 +1,8 @@
-- name: Ensure /home/{{ ansible_user }}/servarr/ directory exists
+- name: Ensure servarr directory exists
   ansible.builtin.file:
     path: /home/{{ ansible_user }}/servarr/
     state: directory
+    mode: '664'
 
 - name: Copy servarr docker-compose.yaml to compose dir
   ansible.builtin.template:
