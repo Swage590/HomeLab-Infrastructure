@@ -19,7 +19,7 @@ provider "onepassword" {
 
 data "onepassword_item" "xo_creds" {
   vault = "Home Lab"         # name or UUID of the vault
-  title = "Xen Orchestra 5 XO-CE"   # title of the item in 1Password
+  title = "Terraform XO-CE"   # title of the item in 1Password
 }
 
 variable "vm_count" {
@@ -34,25 +34,10 @@ locals {
     for i in range(var.vm_count) :
     format("02:00:00:%02x:%02x:%02x", 10, 20, i)
   ]
-  sections = {
-    for section in data.onepassword_item.xo_creds.section :
-    section.label => {
-      id     = section.id
-      fields = {
-        for field_block in section.field :
-        field_block.label => {
-          id      = field_block.id
-          purpose = field_block.purpose
-          type    = field_block.type
-          value   = field_block.value
-        }
-      }
-    }
-  }
 }
 
 provider "xenorchestra" {
-  url      = local.sections["Terraform"].fields["url"].value
+  url      = data.onepassword_item.xo_creds.url
   username = data.onepassword_item.xo_creds.username
   password = data.onepassword_item.xo_creds.password
 
