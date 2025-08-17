@@ -33,5 +33,5 @@ terraform apply
 
 ```bash
 cd Ansible
-ansible-playbook --vault-password-file ansible-vault-password.sh
+ansible-playbook main.yml --vault-password-file ansible-vault-password.sh
 ```
