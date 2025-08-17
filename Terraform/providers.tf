@@ -1,5 +1,4 @@
 provider "onepassword" {
-  account = "my.1password.com"
 }
 
 data "onepassword_item" "unifi_creds" {

@@ -1,7 +1,9 @@
-variable "vm_count" {
-  description = "Number of Ubuntu VMs to create"
-  type        = number
-  default     = 3
+variable "vms" {
+  type = map(object({
+    name   = string
+    cpu    = number
+    memory = number
+  }))
 }
 
 variable "domain" {
@@ -10,35 +12,46 @@ variable "domain" {
   default     = "Swage"
 }
 
-# Pre define VM mac, then declare the 1pass thing for a oneliner lookup
+# Sequential MAC Generation to allow Unifi Entry to be created before VM
 locals {
+  # list of VM keys to map to indices
+  vm_keys = keys(var.vms)
+
+  # generate sequential MACs: 02:00:00:0a:14:00, 02:00:00:0a:14:01, ...
   vm_macs = [
-    for i in range(var.vm_count) :
+    for i in range(length(local.vm_keys)) :
     format("02:00:00:%02x:%02x:%02x", 10, 20, i)
   ]
+
+  # map keys to MACs for easy lookup by VM key
+  mac_addresses = {
+    for idx, key in local.vm_keys :
+    key => local.vm_macs[idx]
+  }
 }
 
 data "unifi_network" "lan" {
   name = "Main" # this must match the name of your LAN network in the UniFi controller
 }
 
-resource "unifi_user" "ubuntu_vm" {
-  count      = var.vm_count
+resource "unifi_user" "client" {
+  for_each = var.vms
 
-  mac        = local.vm_macs[count.index]
-  name       = "Ubuntu-25-Template${count.index + 1}"
-  fixed_ip   = cidrhost("10.59.20.0/24", 200 + count.index) # example: 192.168.1.50, .51, etc.
-  network_id = data.unifi_network.lan.id
-  note       = "Managed by Terraform"
-  local_dns_record = "Ubuntu-25-Template${count.index + 1}.${var.domain}"
+  mac              = local.mac_addresses[each.key]
+  name             = each.value.name
+  fixed_ip         = cidrhost("10.59.20.0/24", 200 + index(local.vm_keys, each.key)) # Starts assigning at .200
+  network_id       = data.unifi_network.lan.id
+  note             = "Managed by Terraform"
+  local_dns_record = "${each.value.name}.${var.domain}"
 }
 
 resource "xenorchestra_vm" "ubuntu_vm" {
-  count             = var.vm_count
-  name_label        = "Ubuntu-25-Template${count.index + 1}"
+  for_each          = var.vms
+
+  name_label        = each.value.name
   name_description  = "Managed by Terraform"
-  memory_max        = 17179869184 # 16 GB in bytes
-  cpus              = 2
+  memory_max        = each.value.memory * 1024 * 1024 * 1024 # Convert GB to bytes
+  cpus              = each.value.cpu
   auto_poweron      = true
   hvm_boot_firmware = "uefi"
 
@@ -47,6 +60,7 @@ resource "xenorchestra_vm" "ubuntu_vm" {
 
   tags = [
       "Ubuntu",
+      "Terraform Managed",
   ]
 
   disk {
@@ -57,26 +71,40 @@ resource "xenorchestra_vm" "ubuntu_vm" {
 
   network {
     network_id = "6545157d-63ee-92e2-8748-ca5db513ac3b" # Network UUID
-    mac_address = local.vm_macs[count.index]
+    mac_address = unifi_user.client[each.key].mac
+  }
+}
+
+resource "onepassword_item" "_1pass_vm_entry" {
+  for_each = var.vms
+
+  vault    = "lqttkuu6qlvnzrcxpemr6w376i" # Ansible Vault
+
+  category = "login"
+
+  title    = each.value.name
+  note_value = "Managed by Terraform"
+  url = "${each.value.name}.${var.domain}"
+
+  username = "Swage"
+  password_recipe {
+    length = 40 
+    symbols = false
   }
 
-  cloud_config = <<EOF
-#cloud-config
-hostname: Ubuntu-25-Template${count.index + 1}
-ssh_pwauth: true
-users:
-  - name: swage
-    sudo: ALL=(ALL) NOPASSWD:ALL
-    groups: users, admin
-    home: /home/swage
-    shell: /bin/bash
-    ssh-authorized-keys:
-      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDZ2Hp3Ahc8IS/jbWFd4cn67f7XLUCh3Ku0TyebNG0/Dn/zdjH5HGUQlDaXRclI8gqX4nTCqZYQBkdklg5axmHQVvJ+GouuOVHKKNiU0HdBpfWWJp3qPuA/EGy8NZG5a/qErY55igcbQ6w0outSU2GcwwZSTnk3vqSTcW99VYxvkZN8b+w+R/OQzs1ADMVqRTkn4OnxpGoLbDU+CeThqplKPjDFyIDw8gRG6EBmaqJUyZ9QfexPBo+PDwtrJckojXXn0oX+JbazQ6GOawKkvmXAJSQsoyWnSmEl1u/fRglD5zSxnYUTRGfG6Atg3pS3dg0GEo7QMXI1oZLzt3+xNC7z"
-runcmd:
-  # Stop networking to safely remove lease
-  - systemctl stop systemd-networkd || true
-  - dhclient -r || true                   # release lease if dhclient is in use
-  - rm -f /var/lib/dhcp/*.leases || true  # remove old lease files
-  - systemctl start systemd-networkd || true
-EOF
+  section {
+    label = "Networking"
+
+    field {
+      label = "MAC Address"
+      type  = "STRING"
+      value = local.mac_addresses[each.key]
+    }
+
+    field {
+      label = "IP Address"
+      type  = "URL"
+      value = unifi_user.client[each.key].ip
+    }
+  }
 }
