@@ -1,27 +1,3 @@
-terraform {
-  required_providers {
-    xenorchestra = {
-      source = "terra-farm/xenorchestra"
-    }
-    onepassword = {
-      source = "1Password/onepassword"
-    }
-    unifi = {
-      source = "ubiquiti-community/unifi"
-      version = "0.41.3"
-    }
-  }
-}
-
-provider "onepassword" {
-  account = "my.1password.com"
-}
-
-data "onepassword_item" "xo_creds" {
-  vault = "Home Lab"         # name or UUID of the vault
-  title = "Terraform XO-CE"   # title of the item in 1Password
-}
-
 variable "vm_count" {
   description = "Number of Ubuntu VMs to create"
   type        = number
@@ -40,27 +16,6 @@ locals {
     for i in range(var.vm_count) :
     format("02:00:00:%02x:%02x:%02x", 10, 20, i)
   ]
-}
-
-provider "xenorchestra" {
-  url      = data.onepassword_item.xo_creds.url
-  username = data.onepassword_item.xo_creds.username
-  password = data.onepassword_item.xo_creds.password
-
-  insecure = true
-}
-
-data "onepassword_item" "unifi_creds" {
-  vault = "Home Lab"         # name or UUID of the vault
-  title = "Terraform Unifi"   # title of the item in 1Password
-}
-
-provider "unifi" {
-  username       = data.onepassword_item.unifi_creds.username
-  password       = data.onepassword_item.unifi_creds.password
-  api_url        = data.onepassword_item.unifi_creds.url
-
-  allow_insecure = true
 }
 
 data "unifi_network" "lan" {
