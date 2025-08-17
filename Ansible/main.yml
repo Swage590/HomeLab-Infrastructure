@@ -41,12 +41,12 @@
 
 # # Host Specific Configurations
 
-- hosts: Prince
-  roles:
-    - role: prince
-      become: true
-
-# - hosts: Data
+# - hosts: Prince
 #   roles:
-#     - role: data
-#       become: true
+#   - role: prince
+#     become: true
+
+ - hosts: Data
+   roles:
+     - role: data
+       become: true

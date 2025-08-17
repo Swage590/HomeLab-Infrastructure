@@ -7,5 +7,5 @@ docker_projects:
         dest: docker-compose.yaml
   - name: MariaDB
     files:
-      - src: "files/[MariaDB] docker-compose.yaml"
+      - src: "files/[MariaDB] docker-compose.yaml.j2"
         dest: docker-compose.yaml

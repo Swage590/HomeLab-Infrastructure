@@ -1,8 +1,8 @@
 version: '3.1'
 
 services:
-
   db:
+    hostname: maria-db-host
     image: mariadb
     restart: always
     ports:
@@ -15,3 +15,32 @@ services:
     restart: always
     ports:
       - 8085:8080
+
+  db-backup:
+    container_name: maria-db-backup
+    image: tiredofit/db-backup
+    volumes:
+      - /mnt/main/Backups/database:/backup
+    environment:
+      - TIMEZONE=America/New York
+      - CONTAINER_NAME=example-db-backup
+      - CONTAINER_ENABLE_MONITORING=FALSE
+      # - DEBUG_MODE=TRUE
+
+      - BACKUP_JOB_CONCURRENCY=1     # Only run one job at a time
+      - DEFAULT_CHECKSUM=NONE        # Don't create checksums
+      - DEFAULT_COMPRESSION=ZSTD     # Compress all with ZSTD
+      - DEFAULT_BACKUP_INTERVAL=1440   # Backup every 1440 minutes
+      - DEFAULT_BACKUP_BEGIN=0000      # Start backing up at midnight
+      - DEFAULT_CLEANUP_TIME=8640    # Cleanup backups after a week
+
+      - DB01_TYPE=mariadb
+      - DB01_HOST=maria-db-host
+      - DB01_NAME=ALL
+      - DB01_USER=root
+      - DB01_PASS={{ MARIADB_ROOT_PASSWORD }}
+      - DB01_BACKUP_INTERVAL=30        # (override) Backup every 30 minutes
+      - DB01_BACKUP_BEGIN=+1           # (override) Backup starts immediately
+      - DB01_CLEANUP_TIME=180        # (override) Cleanup backups they are older than 180 minutes
+      - DB01_CHECKSUM=SHA1           # (override) Create a SHA1 checksum
+      - DB01_COMPRESSION=GZ          # (override) Compress with GZIP

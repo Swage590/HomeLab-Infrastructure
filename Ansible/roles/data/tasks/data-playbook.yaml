@@ -5,7 +5,7 @@
   loop: "{{ docker_projects }}"
 
 - name: Copy project files
-  ansible.builtin.copy:
+  ansible.builtin.template:
     src: "{{ subitem.src }}"
     dest: "/home/{{ ansible_user }}/{{ item.name }}/{{ subitem.dest }}"
     owner: "{{ ansible_user }}"
