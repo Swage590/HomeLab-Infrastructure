@@ -28,6 +28,12 @@ variable "vm_count" {
   default     = 3
 }
 
+variable "domain" {
+  description = "TLD of your env"
+  type        = string
+  default     = "Swage"
+}
+
 # Pre define VM mac, then declare the 1pass thing for a oneliner lookup
 locals {
   vm_macs = [
@@ -69,12 +75,13 @@ resource "unifi_user" "ubuntu_vm" {
   fixed_ip   = cidrhost("10.59.20.0/24", 200 + count.index) # example: 192.168.1.50, .51, etc.
   network_id = data.unifi_network.lan.id
   note       = "Managed by Terraform"
-  local_dns_record = "Ubuntu-25-Template${count.index + 1}.Swage"
+  local_dns_record = "Ubuntu-25-Template${count.index + 1}.${var.domain}"
 }
 
 resource "xenorchestra_vm" "ubuntu_vm" {
   count             = var.vm_count
   name_label        = "Ubuntu-25-Template${count.index + 1}"
+  name_description  = "Managed by Terraform"
   memory_max        = 17179869184 # 16 GB in bytes
   cpus              = 2
   auto_poweron      = true
@@ -82,6 +89,10 @@ resource "xenorchestra_vm" "ubuntu_vm" {
 
   # Template (find the template UUID with `terraform import` or `xo-cli`)
   template = "c1a205ca-04f9-3161-26a8-371b5aec9a6f"
+
+  tags = [
+      "Ubuntu",
+  ]
 
   disk {
     sr_id      = "32add21e-26ca-7eb7-c309-1c3f3df995d2" # Storage repository UUID
