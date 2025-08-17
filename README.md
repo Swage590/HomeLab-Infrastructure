@@ -33,5 +33,6 @@ terraform apply
 
 ```bash
 cd Ansible
+python3 sync-host-vars.py
 ansible-playbook --vault-password-file ansible-vault-password.sh
 ```

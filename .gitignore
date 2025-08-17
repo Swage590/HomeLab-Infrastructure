@@ -4,3 +4,4 @@ Terraform/.terraform/
 Ansible/.ansible/
 Ansible/.vscode/
 .ansible/.lock
+Ansible/host_vars/
