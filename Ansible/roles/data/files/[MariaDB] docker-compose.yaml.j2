@@ -22,7 +22,7 @@ services:
     volumes:
       - /mnt/main/Backups/database:/backup
     environment:
-      - TIMEZONE=America/New York
+      - TIMEZONE=America/New_York
       - CONTAINER_NAME=example-db-backup
       - CONTAINER_ENABLE_MONITORING=FALSE
       # - DEBUG_MODE=TRUE
@@ -39,8 +39,8 @@ services:
       - DB01_NAME=ALL
       - DB01_USER=root
       - DB01_PASS={{ MARIADB_ROOT_PASSWORD }}
-      - DB01_BACKUP_INTERVAL=30        # (override) Backup every 30 minutes
-      - DB01_BACKUP_BEGIN=+1           # (override) Backup starts immediately
-      - DB01_CLEANUP_TIME=180        # (override) Cleanup backups they are older than 180 minutes
+      - DB01_BACKUP_INTERVAL=1440        # Backup Daily
+      - DB01_BACKUP_BEGIN=0000           # Start at Midnight
+      - DB01_CLEANUP_TIME=43200        # Cleanup Backups older than 30 days
       - DB01_CHECKSUM=SHA1           # (override) Create a SHA1 checksum
       - DB01_COMPRESSION=GZ          # (override) Compress with GZIP
