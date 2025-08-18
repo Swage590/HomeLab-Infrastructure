@@ -1,3 +1,4 @@
 #!/bin/bash
 
-export ENV_VAR=$(op read "op://Home Lab/Service Account Auth Token: Terraform/credential")
+OP_SERVICE_ACCOUNT_TOKEN=$(op read "op://Home Lab/co5dtojebigtletvoh2wwpsyl4/credential")
+export OP_SERVICE_ACCOUNT_TOKEN

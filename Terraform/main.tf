@@ -75,6 +75,11 @@ resource "xenorchestra_vm" "ubuntu_vm" {
   }
 }
 
+data "onepassword_item" "vm_temp_creds" {
+  vault = "Home Lab"         # name or UUID of the vault
+  title = "Packer/Ansible Debian Password"   # title of the item in 1Password
+}
+
 resource "onepassword_item" "_1pass_vm_entry" {
   for_each = var.vms
 
@@ -86,11 +91,8 @@ resource "onepassword_item" "_1pass_vm_entry" {
   note_value = "Managed by Terraform"
   url = "${each.value.name}.${var.domain}"
 
-  username = "Swage"
-  password_recipe {
-    length = 40 
-    symbols = false
-  }
+  username = "swage"
+  password = data.onepassword_item.vm_temp_creds.password
 
   section {
     label = "Networking"

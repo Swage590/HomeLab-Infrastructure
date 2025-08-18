@@ -24,7 +24,7 @@ terraform init
 # Terraform Instructions
 
 ```bash
-./inject-op-token.sh
+source inject-op-token.sh
 cd Terraform
 terraform apply
 ```
