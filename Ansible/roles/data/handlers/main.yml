@@ -1,0 +1,11 @@
+- name: Restart nginx-lb
+  ansible.builtin.command:
+    cmd: docker compose -f docker-compose.yaml up -d
+  args:
+    chdir: "/home/{{ ansible_user }}/nginx-lb"
+
+- name: Restart MariaDB
+  ansible.builtin.command:
+    cmd: docker compose -f docker-compose.yaml up -d
+  args:
+    chdir: "/home/{{ ansible_user }}/MariaDB"

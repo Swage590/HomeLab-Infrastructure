@@ -14,7 +14,7 @@
 
 - name: Mount shared drive and add to fstab
   ansible.posix.mount:
-    src: //10.59.20.3/main  # Replace with the actual device name or UUID of your shared drive
+    src: //NAS.Swage/main  # Replace with the actual device name or UUID of your shared drive
     path: /mnt/main # Replace with the desired mount point
     fstype: cifs # Replace with the file system type
     opts: "credentials=/root/.smbcredentials,iocharset=utf8,file_mode=0777,dir_mode=0777"

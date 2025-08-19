@@ -1,26 +1,52 @@
-- name: Ensure project directories exist
+# ---------------- nginx-lb ----------------
+- name: Ensure nginx-lb project directory exists
   ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/{{ item.name }}/"
+    path: "/home/{{ ansible_user }}/nginx-lb/"
     state: directory
-  loop: "{{ docker_projects }}"
+    mode: '0755'
 
-- name: Copy project files
+- name: Copy nginx.conf for nginx-lb
   ansible.builtin.template:
-    src: "{{ subitem.src }}"
-    dest: "/home/{{ ansible_user }}/{{ item.name }}/{{ subitem.dest }}"
+    src: files/nginx.conf
+    dest: "/home/{{ ansible_user }}/nginx-lb/nginx.conf"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-    mode: '664'
-  loop: "{{ docker_projects | subelements('files') }}"
-  loop_control:
-    loop_var: item_pair
-  vars:
-    item: "{{ item_pair.0 }}"
-    subitem: "{{ item_pair.1 }}"
+    mode: '0644'
+  notify: Restart nginx-lb
 
-- name: Ensure Docker Compose projects are running
+- name: Copy docker-compose.yaml for nginx-lb
+  ansible.builtin.template:
+    src: "files/[nginx-lb] docker-compose.yaml"
+    dest: "/home/{{ ansible_user }}/nginx-lb/docker-compose.yaml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+  notify: Restart nginx-lb
+
+- name: Ensure nginx-lb Docker Compose project is running
   community.docker.docker_compose_v2:
-    project_src: "/home/{{ ansible_user }}/{{ item.name }}/"
+    project_src: "/home/{{ ansible_user }}/nginx-lb/"
     state: present
     pull: always
-  loop: "{{ docker_projects }}"
+
+# ---------------- MariaDB ----------------
+- name: Ensure MariaDB project directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/MariaDB/"
+    state: directory
+    mode: '0755'
+
+- name: Copy docker-compose.yaml for MariaDB
+  ansible.builtin.template:
+    src: "files/[MariaDB] docker-compose.yaml.j2"
+    dest: "/home/{{ ansible_user }}/MariaDB/docker-compose.yaml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+  notify: Restart MariaDB
+
+- name: Ensure MariaDB Docker Compose project is running
+  community.docker.docker_compose_v2:
+    project_src: "/home/{{ ansible_user }}/MariaDB/"
+    state: present
+    pull: always
