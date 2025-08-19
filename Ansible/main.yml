@@ -1,11 +1,11 @@
 # # Initial Wave of Configuration
 
-# - hosts: all
-#   roles:
+- hosts: all
+  roles:
 #     - role: base
 #       become: true
-#     - role: sharedrive
-#       become: true
+    - role: sharedrive
+      become: true
 
 # # - hosts: proxmox
 # #   roles:
@@ -46,7 +46,7 @@
 #   - role: prince
 #     become: true
 
-- hosts: Data
-  roles:
-  - role: data
-    become: true
+# - hosts: Data
+#   roles:
+#   - role: data
+#     become: true
