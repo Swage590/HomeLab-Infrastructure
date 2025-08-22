@@ -3,6 +3,11 @@
     name: cifs-utils
     state: present
 
+- name: Ensure cifs-utils is installed
+  ansible.builtin.package:
+    name: nfs-common
+    state: present
+
 - name: Copy over smb credentials
   ansible.builtin.copy:
     src: files/.smbcredentials

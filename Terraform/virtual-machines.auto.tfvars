@@ -1,3 +1,3 @@
 vms = {
-  TerraformTest = { name = "TerraformTest", cpu = 2, memory = 2 }
+  Surf3 = { name = "Surf3", cpu = 2, memory = 16 }
 }

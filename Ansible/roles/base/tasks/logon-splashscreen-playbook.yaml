@@ -4,7 +4,7 @@
     dest: /etc/profile.d/swage-banner.sh
     owner: root
     group: root
-    mode: '660'
+    mode: '665'
 
 - name: Copy the list of fav fonts
   ansible.builtin.copy:

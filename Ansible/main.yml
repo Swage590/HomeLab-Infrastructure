@@ -1,52 +1,52 @@
-# # Initial Wave of Configuration
+# Initial Wave of Configuration
 
 - hosts: all
   roles:
-#     - role: base
-#       become: true
+    - role: base
+      become: true
     - role: sharedrive
       become: true
 
-# # - hosts: proxmox
-# #   roles:
-# #     - role: proxmox
-# #       become: true
-
-# - hosts: xcp-ng
+# - hosts: proxmox
 #   roles:
-#     - role: ubuntu
+#     - role: proxmox
 #       become: true
 
-# - hosts: ubuntu
-#   roles:
-#     - role: ubuntu
-#       become: true
+- hosts: xcp-ng
+  roles:
+    - role: ubuntu
+      become: true
 
-# - hosts: general
-#   roles:
-#     - role: docker
-#       become: true
+- hosts: ubuntu
+  roles:
+    - role: ubuntu
+      become: true
 
-# # Dependant Configurations
+- hosts: general
+  roles:
+    - role: docker
+      become: true
 
-# - hosts: master_node
-#   roles:
-#     - role: k3s_master
-#       become: true
+# Dependant Configurations
 
-# - hosts: worker_node
-#   roles:
-#     - role: k3s_worker
-#       become: true
+- hosts: master_node
+  roles:
+    - role: k3s_master
+      become: true
 
-# # Host Specific Configurations
+- hosts: worker_node
+  roles:
+    - role: k3s_worker
+      become: true
 
-# - hosts: Prince
-#   roles:
-#   - role: prince
-#     become: true
+# Host Specific Configurations
 
-# - hosts: Data
-#   roles:
-#   - role: data
-#     become: true
+- hosts: Prince
+  roles:
+  - role: prince
+    become: true
+
+- hosts: Data
+  roles:
+  - role: data
+    become: true
