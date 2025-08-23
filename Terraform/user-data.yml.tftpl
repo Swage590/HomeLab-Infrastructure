@@ -1,0 +1,13 @@
+#cloud-config
+hostname: ${hostname}
+create_hostname_file: true
+fqdn: ${fqdn}
+prefer_fqdn_over_hostname: true
+
+# Set the password for the default user
+users:
+  - name: ${username}
+    plain_text_passwd: ${password}
+    lock_passwd: false
+runcmd:
+  - [sh, -c, echo "=========hello world'=========" >> /home/swage/test-cloud-init.txt]

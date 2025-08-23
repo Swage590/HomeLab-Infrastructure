@@ -25,7 +25,7 @@ resource "unifi_user" "client" {
   name             = each.value.name
   fixed_ip         = each.value.ip
   network_id       = data.unifi_network.lan.id
-  note             = "Managed by Terraform"
+  note             = "Created by Terraform"
   local_dns_record = "${each.value.name}.${var.domain}"
 }
 
@@ -33,7 +33,7 @@ resource "xenorchestra_vm" "ubuntu_vm" {
   for_each          = var.vms
 
   name_label        = each.value.name
-  name_description  = "Managed by Terraform"
+  name_description  = "Created by Terraform"
   memory_max        = each.value.memory * 1024 * 1024 * 1024 # Convert GB to bytes
   cpus              = each.value.cpu
   auto_poweron      = true
@@ -57,6 +57,15 @@ resource "xenorchestra_vm" "ubuntu_vm" {
     network_id = "6545157d-63ee-92e2-8748-ca5db513ac3b" # Network UUID
     mac_address = unifi_user.client[each.key].mac
   }
+
+  // highlight-start
+  # Pass the cloud-init configuration directly
+  cloud_config = templatefile("${path.module}/user-data.yml.tftpl", {
+    hostname        = each.value.name
+    username        = "swage"
+    password        = onepassword_item._1pass_vm_entry[each.key].password
+    fqdn            = "${each.value.name}.${var.domain}"
+  })
 }
 
 data "onepassword_item" "vm_temp_creds" {
@@ -72,11 +81,14 @@ resource "onepassword_item" "_1pass_vm_entry" {
   category = "login"
 
   title    = each.value.name
-  note_value = "Managed by Terraform"
+  note_value = "Created by Terraform"
   url = "${each.value.name}.${var.domain}"
 
   username = "swage"
-  password = data.onepassword_item.vm_temp_creds.password
+  password_recipe {
+    length  = 50
+    symbols = false
+  }
 
   section {
     label = "Networking"
@@ -90,7 +102,7 @@ resource "onepassword_item" "_1pass_vm_entry" {
     field {
       label = "IP Address"
       type  = "URL"
-      value = unifi_user.client[each.key].ip
+      value = each.value.ip
     }
   }
 }
