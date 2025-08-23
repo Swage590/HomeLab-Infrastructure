@@ -99,7 +99,7 @@ def main():
     hosts = get_hosts(INVENTORY_FILE)
     print("Found hosts:", hosts)
     for host in hosts:
-        write_encrypted_vault(host, "ansible-vault-password.sh")
+        write_encrypted_vault(host, "vault-password.sh")
 
 if __name__ == "__main__":
     main()

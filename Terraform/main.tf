@@ -3,6 +3,8 @@ variable "vms" {
     name   = string
     cpu    = number
     memory = number
+    mac    = string
+    ip     = string
   }))
 }
 
@@ -12,24 +14,6 @@ variable "domain" {
   default     = "Swage"
 }
 
-# Sequential MAC Generation to allow Unifi Entry to be created before VM
-locals {
-  # list of VM keys to map to indices
-  vm_keys = keys(var.vms)
-
-  # generate sequential MACs: 02:00:00:0a:14:00, 02:00:00:0a:14:01, ...
-  vm_macs = [
-    for i in range(length(local.vm_keys)) :
-    format("02:00:00:%02x:%02x:%02x", 10, 20, i)
-  ]
-
-  # map keys to MACs for easy lookup by VM key
-  mac_addresses = {
-    for idx, key in local.vm_keys :
-    key => local.vm_macs[idx]
-  }
-}
-
 data "unifi_network" "lan" {
   name = "Main" # this must match the name of your LAN network in the UniFi controller
 }
@@ -37,9 +21,9 @@ data "unifi_network" "lan" {
 resource "unifi_user" "client" {
   for_each = var.vms
 
-  mac              = local.mac_addresses[each.key]
+  mac              = each.value.mac
   name             = each.value.name
-  fixed_ip         = cidrhost("10.59.20.0/24", 200 + index(local.vm_keys, each.key)) # Starts assigning at .200
+  fixed_ip         = each.value.ip
   network_id       = data.unifi_network.lan.id
   note             = "Managed by Terraform"
   local_dns_record = "${each.value.name}.${var.domain}"
@@ -56,7 +40,7 @@ resource "xenorchestra_vm" "ubuntu_vm" {
   hvm_boot_firmware = "uefi"
 
   # Template (find the template UUID with `terraform import` or `xo-cli`)
-  template = "c1a205ca-04f9-3161-26a8-371b5aec9a6f"
+  template = "9b60187e-5bf1-ccb8-9c2d-bd58b275248b"
 
   tags = [
       "Ubuntu",
@@ -100,7 +84,7 @@ resource "onepassword_item" "_1pass_vm_entry" {
     field {
       label = "MAC Address"
       type  = "STRING"
-      value = local.mac_addresses[each.key]
+      value = each.value.mac
     }
 
     field {
