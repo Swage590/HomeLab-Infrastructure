@@ -9,5 +9,65 @@ users:
   - name: ${username}
     plain_text_passwd: ${password}
     lock_passwd: false
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - curl
+  - unzip
+  - jq
+  - openssh-server
+  - vim
+  - gpg
+  - ca-certificates
+
+write_files:
+  - path: /etc/ssh/sshd_config.d/10-step-host-cert.conf
+    permissions: '0644'
+    owner: root:root
+    content: |
+      HostKey /etc/ssh/ssh_host_ecdsa_key
+      HostCertificate /etc/ssh/ssh_host_ecdsa_key-cert.pub
+  - path: /root/.swage-jwk-provisioner-password
+    permissions: '0600'
+    owner: root:root
+    content: |
+      password
+  - path: /root/setup-step.sh
+    permissions: '0700'
+    content: |
+      #!/bin/bash
+      curl -fsSL https://packages.smallstep.com/keys/apt/repo-signing-key.gpg \
+        -o /etc/apt/trusted.gpg.d/smallstep.asc
+      echo "deb [signed-by=/etc/apt/trusted.gpg.d/smallstep.asc] https://packages.smallstep.com/stable/debian debs main" \
+        | tee /etc/apt/sources.list.d/smallstep.list
+
+      # Update and install step-cli
+      apt-get update
+      apt-get install -y step-cli wget curl
+
+      # Sign host certificates and restart ssh
+      step ca bootstrap \
+        --ca-url https://data.swage:9000 \
+        --fingerprint dab346af55fe479e2cb07fd3840efeb34f8332d67eb580db7744f35960eeaeac
+
+      step ssh certificate "$(hostname -f | tr '[:upper:]' '[:lower:]')" \
+        /etc/ssh/ssh_host_ecdsa_key \
+        --principal "$(hostname -s | tr '[:upper:]' '[:lower:]')" \
+        --principal "$(hostname -f | tr '[:upper:]' '[:lower:]')" \
+        --provisioner "swage-jwk-provisioner" \
+        --force --host --no-password --insecure \
+        --provisioner-password-file /root/.swage-jwk-provisioner-password
+      systemctl restart ssh
+      rm -f /root/.swage-jwk-provisioner-password
+
 runcmd:
-  - [sh, -c, echo "=========hello world'=========" >> /home/swage/test-cloud-init.txt]
+  - bash /root/setup-step.sh
+
+power_state:
+  mode: reboot
+  delay: "+0"
+  message: "System rebooting after cloud-init completion."
+  timeout: 30
+  condition: true

@@ -79,6 +79,12 @@ resource "onepassword_item" "_1pass_vm_entry" {
   vault    = "lqttkuu6qlvnzrcxpemr6w376i" # Ansible Vault
 
   category = "login"
+    
+  lifecycle {
+    ignore_changes = [
+      password,
+    ]
+  }
 
   title    = each.value.name
   note_value = "Created by Terraform"

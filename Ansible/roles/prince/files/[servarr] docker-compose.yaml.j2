@@ -64,6 +64,7 @@ services:
     volumes:
       - /docker/appdata/emby:/config # DO NOT CHANGE, BREAKS IF ON SMB SHARE FOR SOME REASON
       - "{{ servarr_media_dir }}:/mnt/share1" # Media directory
+      - /opt/certs:/certs   # Mount certs directory
     ports:
       - 8096:8096 # HTTP port
       - 8920:8920 # HTTPS port
@@ -75,13 +76,14 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=America/New_York
-      - WEBUI_PORT=8080
+      - WEBUI_PORT=8443
       - TORRENTING_PORT=6881
     volumes:
       - "{{ servarr_config_dir }}/qbittorrent:/config"
       - "{{ servarr_media_dir }}:/data/media"
+      - /opt/certs:/certs
     ports:
-      - 8080:8080
+      - 8443:8443
       - 6881:6881
       - 6881:6881/udp
     restart: unless-stopped
