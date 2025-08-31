@@ -1,11 +1,13 @@
-# # Initial Wave of Configuration
+# Initial Wave of Configuration
 
-# - hosts: all
-#   roles:
-#     - role: base
-#       become: true
-#     - role: sharedrive
-#       become: true
+- hosts: all
+  roles:
+    # - role: base
+    #   become: true
+    # - role: sharedrive
+    #   become: true
+    - role: certificates
+      become: true
 
 # # - hosts: proxmox
 # #   roles:
@@ -34,12 +36,13 @@
 #     - role: k3s_master
 #       become: true
 
-- hosts: worker_node
-  roles:
-    - role: k3s_worker
-      become: true
+# - hosts: worker_node
+#   roles:
+#     - role: k3s_worker
+#       become: true
 
-# Host Specific Configurations
+
+# # Host Specific Configurations
 
 # - hosts: Prince
 #   roles:

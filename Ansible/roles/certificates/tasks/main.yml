@@ -1,0 +1,2 @@
+- name: Ensure host has signed certificates, and auto-renew is on
+  include_tasks: certificate-playbook.yaml

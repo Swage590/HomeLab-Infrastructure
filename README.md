@@ -36,3 +36,15 @@ cd Ansible
 python3 sync-host-vars.py
 ansible-playbook main.yml --vault-password-file ansible-vault-password.sh
 ```
+
+# Ops Design
+
+00:00 - Backups run at midnight on all systems
+
+01:00 - Backups are encrypted and exported to the cloud
+
+03:00 - Host updates are run
+
+04:00 - Container updates are run
+
+05:00 - Certificates are updates

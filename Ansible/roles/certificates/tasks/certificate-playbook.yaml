@@ -1,0 +1,117 @@
+- name: Add Smallstep apt key
+  ansible.builtin.get_url:
+    url: https://packages.smallstep.com/keys/apt/repo-signing-key.gpg
+    dest: /etc/apt/trusted.gpg.d/smallstep.asc
+    mode: '0644'
+
+- name: Add Smallstep apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/trusted.gpg.d/smallstep.asc] https://packages.smallstep.com/stable/debian debs main"
+    filename: smallstep
+    state: present
+
+- name: Ensure step-cli and dependencies are installed
+  ansible.builtin.apt:
+    name:
+      - step-cli
+      - wget
+      - curl
+    state: present
+    update_cache: true
+
+- name: Check if Step CA is already bootstrapped
+  ansible.builtin.command: >
+    step ca health
+  register: ca_health
+  ignore_errors: true
+
+- name: Ensure Step CA is Boostrapped
+  ansible.builtin.command: >
+    step ca bootstrap
+    --ca-url https://{{ certificates_ca_address_or_ip }}:9000
+    --fingerprint {{ certificates_fingerprint }}
+  when: ca_health.rc != 0
+
+- name: Create systemd service for certificate renewal
+  ansible.builtin.copy:
+    dest: /root/.provisioner-password
+    mode: '0600'
+    owner: root
+    content: "{{ certificates_provisioner_password }}"
+  notify: Restart SSH
+
+- name: Ensure host is configured to use it's certs 
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/10-step-host-cert.conf
+    mode: '0644'
+    owner: root
+    content: |
+      HostKey /etc/ssh/ssh_host_ecdsa_key
+      HostCertificate /etc/ssh/ssh_host_ecdsa_key-cert.pub
+
+- name: Check existing SSH host certificate
+  ansible.builtin.shell: ssh-keygen -L -f /etc/ssh/ssh_host_ecdsa_key-cert.pub
+  register: ssh_cert_info
+  ignore_errors: true
+
+- name: Set fact if certificate has correct principals
+  ansible.builtin.set_fact:
+    cert_has_principals: >-
+      {{ 
+        ssh_cert_info.stdout is search('Principals:\\s*{{ ansible_hostname | lower }}\\s*{{ ansible_fqdn | lower }}') 
+      }}
+  when: ssh_cert_info.rc == 0
+
+- name: Generate SSH host certificate
+  ansible.builtin.command: >
+    step ssh certificate
+    {{ ansible_fqdn | lower }}
+    /etc/ssh/ssh_host_ecdsa_key
+    --principal {{ ansible_hostname | lower }}
+    --principal {{ ansible_fqdn | lower }}
+    --provisioner swage-jwk-provisioner
+    --force --host --no-password --insecure
+    --provisioner-password-file /root/.provisioner-password
+  notify: Restart SSH
+  when: not cert_has_principals | default(false)
+
+
+- name: Create systemd service for certificate renewal
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/step-ssh-renew.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Renew SSH host certificate using step
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/bin/step ssh certificate {{ ansible_fqdn | lower }} /etc/ssh/ssh_host_ecdsa_key \
+        --principal {{ ansible_hostname | lower }} \
+        --principal {{ ansible_fqdn | lower }} \
+        --provisioner swage-jwk-provisioner \
+        --host --no-password --insecure \
+        --provisioner-password-file /root/.provisioner-password
+      ExecStartPost=/bin/systemctl restart ssh
+
+- name: Create systemd timer for daily 5am renewal
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/step-ssh-renew.timer
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Daily renewal of SSH host certificate at 5am
+
+      [Timer]
+      OnCalendar=*-*-* 05:00:00
+      RandomizedDelaySec=1800
+      Persistent=true
+
+      [Install]
+      WantedBy=timers.target
+
+- name: Enable and start step-ssh-renew timer
+  ansible.builtin.systemd:
+    name: step-ssh-renew.timer
+    enabled: true
+    state: started
