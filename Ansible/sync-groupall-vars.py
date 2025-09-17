@@ -12,9 +12,10 @@ def fetch_item(item_name, vault_name, field_name):
             ["op", "read", op_path],
             capture_output=True, text=True, check=True
         )
+        print(f"✅ Fetched {item_name}/{field_name} successfully.")
         return result.stdout.strip()
     except subprocess.CalledProcessError as e:
-        print(f"Error fetching password for {item_name}: {e.stderr}")
+        print(f"❌ Error fetching {item_name}/{field_name}: {e.stderr}")
         sys.exit(1)
 
 def write_ansible_vault_yaml(filepath: str, vault_password: str, **data):
@@ -56,6 +57,12 @@ def main():
         vault_password,
         certificates_ca_address_or_ip=fetch_item("Step-CA", "Home Lab", "url"),
         certificates_fingerprint=fetch_item("Step-CA", "Home Lab", "SmallStep Info/X.509 Root Fingerprint"),
+        MARIADB_ROOT_PASSWORD=fetch_item("MARIADB_ROOT_PASSWORD", "Home Lab", "password"),
+        DISCORD_CHANNEL_ID_TOKEN=fetch_item("Watchtower_Discord_Webhook_Token", "Home Lab", "password"),
+        k3s_datastore_endpoint=fetch_item("K3s", "Home Lab", "password"),
+        k3s_token=fetch_item("K3s Node Token", "Home Lab", "password"),
+        k3s_tls_san=fetch_item("k3s", "Home Lab", "url"),
+        discord_webhook_url=fetch_item("SMTP_discord_webhook_url", "Home Lab", "password"),
     )
 
 if __name__ == "__main__":

@@ -64,7 +64,7 @@ services:
     volumes:
       - /docker/appdata/emby:/config # DO NOT CHANGE, BREAKS IF ON SMB SHARE FOR SOME REASON
       - "{{ servarr_media_dir }}:/mnt/share1" # Media directory
-      - /opt/certs:/certs   # Mount certs directory
+      - /etc/letsencrypt/live/emby.swages.net/:/certs   # Mount certs directory
     ports:
       - 8096:8096 # HTTP port
       - 8920:8920 # HTTPS port

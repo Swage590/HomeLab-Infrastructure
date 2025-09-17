@@ -19,6 +19,7 @@ services:
   db-backup:
     container_name: maria-db-backup
     image: tiredofit/db-backup
+    restart: always
     volumes:
       - /mnt/main/Backups/database:/backup
     environment:
