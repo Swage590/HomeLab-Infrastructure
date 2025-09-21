@@ -1,6 +1,8 @@
-- name: Ensure cifs-utils is installed
+- name: Ensure CIFS and NFS utilities are installed
   ansible.builtin.package:
-    name: cifs-utils
+    name:
+      - cifs-utils
+      - nfs-common
     state: present
 
 - name: Ensure cifs-utils is installed
@@ -9,18 +11,35 @@
     state: present
 
 - name: Copy over smb credentials
+  no_log: true
   ansible.builtin.copy:
     src: files/.smbcredentials
     dest: /root/.smbcredentials
     owner: root
     group: root
     mode: '0700'
-  no_log: true
 
-- name: Mount shared drive and add to fstab
-  ansible.posix.mount:
-    src: //NAS.Swage/main  # Replace with the actual device name or UUID of your shared drive
-    path: /mnt/main # Replace with the desired mount point
-    fstype: cifs # Replace with the file system type
-    opts: "credentials=/root/.smbcredentials,iocharset=utf8,file_mode=0777,dir_mode=0777"
-    state: mounted
+- name: Create systemd mount unit for the main share
+  become: true
+  notify:
+    - Reload systemd and start mount
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/mnt-main.mount
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Mount main share from NAS
+      After=network-online.target
+      Wants=network-online.target
+
+      [Mount]
+      What=//{{ sharedrive_server }}/{{ sharedrive_share }}
+      Where=/mnt/main
+      Type=cifs
+      Options=credentials=/root/.smbcredentials,iocharset=utf8,file_mode=0777,dir_mode=0777,_netdev
+      TimeoutSec=30
+
+      [Install]
+      WantedBy=multi-user.target

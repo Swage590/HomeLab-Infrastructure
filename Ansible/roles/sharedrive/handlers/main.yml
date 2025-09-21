@@ -1,0 +1,8 @@
+- name: Reload systemd and start mount
+  listen: "Reload systemd and start mount"
+  ansible.builtin.systemd:
+    name: mnt-main.mount
+    state: started
+    enabled: true
+    daemon_reload: true
+  become: true

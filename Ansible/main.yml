@@ -2,54 +2,61 @@
 
 - hosts: all
   roles:
-    # - role: base
-    #   become: true
-    # - role: sharedrive
-    #   become: true
+    - role: base
+      become: true
+    - role: sharedrive
+      become: true
     - role: certificates
       become: true
 
-# # - hosts: proxmox
-# #   roles:
-# #     - role: proxmox
-# #       become: true
-
-# - hosts: xcp-ng
+# - hosts: proxmox
 #   roles:
-#     - role: ubuntu
+#     - role: proxmox
 #       become: true
 
-# - hosts: ubuntu
+- hosts: xcp-ng
+  roles:
+    - role: ubuntu
+      become: true
+
+- hosts: ubuntu
+  roles:
+    - role: ubuntu
+      become: true
+
+- hosts: general
+  roles:
+    - role: docker
+      become: true
+
+# Dependant Configurations
+
+- hosts: master_node
+  roles:
+    - role: k3s_master
+      become: true
+
+- hosts: worker_node
+  roles:
+    - role: k3s_worker
+      become: true
+
+
+# Host Specific Configurations
+
+- hosts: Prince
+  roles:
+  - role: prince
+    become: true
+
+- hosts: Data
+  roles:
+  - role: data
+    become: true
+
+# - name: Arch Greed
+#   hosts: 127.0.0.1
+#   connection: local
+#   become: yes
 #   roles:
-#     - role: ubuntu
-#       become: true
-
-# - hosts: general
-#   roles:
-#     - role: docker
-#       become: true
-
-# # Dependant Configurations
-
-# - hosts: master_node
-#   roles:
-#     - role: k3s_master
-#       become: true
-
-# - hosts: worker_node
-#   roles:
-#     - role: k3s_worker
-#       become: true
-
-
-# # Host Specific Configurations
-
-# - hosts: Prince
-#   roles:
-#   - role: prince
-#     become: true
-
-# - hosts: Data
-#   roles:
-#   - role: data
-#     become: true
+#     - sharedrive
