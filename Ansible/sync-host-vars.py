@@ -79,7 +79,7 @@ import tempfile
 # Cache vault password to a temporary file
 @lru_cache(maxsize=1)
 def get_vault_password_file():
-    vault_password = fetch_item("vault", "Ansible", "vault_password")
+    vault_password = fetch_item("Ansible-Vault", "Home Lab", "password")
     tmp = tempfile.NamedTemporaryFile(delete=False, mode="w")
     tmp.write(vault_password)
     tmp.flush()
@@ -102,7 +102,7 @@ def write_encrypted_vault(hostname):
 
     vault_password_file = get_vault_password_file()
     process = subprocess.run(
-        ["ansible-vault", "encrypt", vault_file_path, "--vault-password-file", vault_password_file],
+        ["ansible-vault", "encrypt", vault_file_path, "--vault-password-file", vault_password_file, "--encrypt-vault-id", "default"],
         capture_output=True, text=True
     )
     if process.returncode != 0:

@@ -1,5 +1,5 @@
-roles:
-  # Role from Ansible Galaxy
-  - name: geerlingguy.nut_client
-    version: 1.1.0
+---
+collections:
+  # Core Docker support (for docker_compose_v2 and other modules)
+  - name: community.docker
 
