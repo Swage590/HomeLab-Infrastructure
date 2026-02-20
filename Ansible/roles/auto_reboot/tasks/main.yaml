@@ -1,0 +1,37 @@
+- name: Ensure needrestart is installed
+  ansible.builtin.apt:
+    name: needrestart
+    state: present
+    update_cache: yes
+
+- name: Deploy the check-reboot bash script
+  ansible.builtin.template:
+    src: check-reboot.sh.j2
+    dest: /usr/local/bin/check-reboot.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy the check-reboot systemd service
+  ansible.builtin.template:
+    src: check-reboot.service.j2
+    dest: /etc/systemd/system/check-reboot.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Deploy the check-reboot systemd timer
+  ansible.builtin.template:
+    src: check-reboot.timer.j2
+    dest: /etc/systemd/system/check-reboot.timer
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Enable and start the check-reboot timer
+  ansible.builtin.systemd:
+    name: check-reboot.timer
+    state: started
+    enabled: yes
+    daemon_reload: yes
+

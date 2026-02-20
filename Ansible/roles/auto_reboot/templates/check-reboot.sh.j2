@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Ensure needrestart is installed
+if ! command -v needrestart &> /dev/null; then
+    echo "Error: 'needrestart' is not installed."
+    exit 1
+fi
+
+# Run needrestart in batch mode (-b) and look for services needing restart
+if needrestart -b | grep -q "^NEEDRESTART-SVC:"; then
+    echo "$(date): Services need restarting. Rebooting system..."
+    /sbin/reboot
+# Fail-safe: Also check if standard system updates require a reboot
+elif [ -f /var/run/reboot-required ]; then
+    echo "$(date): /var/run/reboot-required flag is set. Rebooting system..."
+    /sbin/reboot
+else
+    echo "$(date): No services require a restart. System is up to date."
+fi
+

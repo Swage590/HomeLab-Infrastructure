@@ -1,0 +1,2 @@
+# Default time to run the check (Systemd OnCalendar format)
+auto_reboot_time: "*-*-* 05:00:00"

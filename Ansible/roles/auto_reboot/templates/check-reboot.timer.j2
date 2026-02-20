@@ -1,0 +1,11 @@
+[Unit]
+Description=Run check-reboot.service daily
+
+[Timer]
+# Runs based on the Ansible variable defined
+OnCalendar={{ auto_reboot_time }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+

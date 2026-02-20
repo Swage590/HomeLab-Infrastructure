@@ -8,6 +8,8 @@
 #       become: true
 #     - role: certificates
 #       become: true
+#     - role: auto_reboot
+#       become: true
 
 # - hosts: proxmox
 #   roles:
