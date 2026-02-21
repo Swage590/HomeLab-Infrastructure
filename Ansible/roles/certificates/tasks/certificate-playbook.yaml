@@ -20,17 +20,16 @@
     update_cache: true
 
 - name: Check if Step CA is already bootstrapped
-  ansible.builtin.command: >
-    step ca health
-  register: ca_health
-  ignore_errors: true
+  ansible.builtin.stat:
+    path: /root/.step/config/defaults.json
+  register: ca_config_stat
 
 - name: Ensure Step CA is Boostrapped
   ansible.builtin.command: >
     step ca bootstrap
     --ca-url https://{{ certificates_ca_address_or_ip }}:9000
     --fingerprint {{ certificates_fingerprint }}
-  when: ca_health.rc != 0
+  when: not ca_config_stat.stat.exists
 
 - name: Create systemd service for certificate renewal
   ansible.builtin.copy:
@@ -40,7 +39,7 @@
     content: "{{ certificates_provisioner_password }}"
   notify: Restart SSH
 
-- name: Ensure host is configured to use it's certs 
+- name: Ensure host is configured to use it's certs
   ansible.builtin.copy:
     dest: /etc/ssh/sshd_config.d/10-step-host-cert.conf
     mode: '0644'
@@ -53,12 +52,13 @@
   ansible.builtin.shell: ssh-keygen -L -f /etc/ssh/ssh_host_ecdsa_key-cert.pub
   register: ssh_cert_info
   ignore_errors: true
+  changed_when: false
 
 - name: Set fact if certificate has correct principals
   ansible.builtin.set_fact:
     cert_has_principals: >-
-      {{ 
-        ssh_cert_info.stdout is search('Principals:\\s*{{ ansible_hostname | lower }}\\s*{{ ansible_fqdn | lower }}') 
+      {{
+        ssh_cert_info.stdout is search('Principals:\s*' ~ (ansible_hostname | lower) ~ '\s*' ~ (ansible_fqdn | lower))
       }}
   when: ssh_cert_info.rc == 0
 

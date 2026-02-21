@@ -12,6 +12,7 @@
       [Resolve]
       DNS={{ dns_servers | join(" ") }}
       FallbackDNS={{ fallback_dns_servers | join(" ") }}
+      Domains=swage
       DNSStubListener=yes
   notify: Restart systemd-resolved
 
