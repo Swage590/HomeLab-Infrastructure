@@ -12,4 +12,6 @@
     env:
       WATCHTOWER_NOTIFICATION_URL: "discord://{{ DISCORD_CHANNEL_ID_TOKEN }}"
       DOCKER_API_VERSION: "1.52"
-
+      WATCHTOWER_SCHEDULE: "0 0 4 * * *"
+      TZ: "America/New_York"
+      WATCHTOWER_CLEANUP: true
