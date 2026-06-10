@@ -1,0 +1,17 @@
+---
+- name: Setup SSH Key for Ansible
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Fetch private key from 1Password
+      ansible.builtin.command: op read "op://Home Lab/Github SSH Key/private key"
+      register: op_key
+      no_log: true
+
+    - name: Write private key to file
+      ansible.builtin.copy:
+        content: "{{ op_key.stdout }}\n"
+        dest: /home/swage/private_key
+        mode: '0600'
+      no_log: true

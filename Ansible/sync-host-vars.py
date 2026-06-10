@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import tempfile
 import atexit
 import subprocess
@@ -6,12 +7,26 @@ import os
 import sys
 import re
 from functools import lru_cache
-import atexit
-# Path to your Ansible inventory
-INVENTORY_FILE = "inventory.ini"
-HOST_VARS_DIR = "host_vars"
+import configparser
 
-# Vault info
+# -------------------------
+# Configuration & Defaults
+# -------------------------
+
+def get_default_inventory():
+    """Determine the default inventory path from ansible.cfg or use the standard fallback."""
+    ansible_cfg = os.environ.get("ANSIBLE_CONFIG", "ansible.cfg")
+    fallback_inventory = "inventory.ini"
+
+    if os.path.exists(ansible_cfg):
+        config = configparser.ConfigParser()
+        config.read(ansible_cfg)
+        if "defaults" in config and "inventory" in config["defaults"]:
+            return config["defaults"]["inventory"]
+            
+    return fallback_inventory
+
+HOST_VARS_DIR = "host_vars"
 VAULT_FILE_NAME = "vault.yml"
 
 # -------------------------
@@ -32,15 +47,28 @@ def fetch_item(item_name, vault_name, field_name):
         sys.exit(1)
 
 # Expand ranges like Host[1:3] -> Host1, Host2, Host3
+import re
+
 def expand_host_range(host):
-    m = re.match(r"(\w+)\[(\d+):(\d+)\]", host)
+    # The regex now captures 4 groups: Prefix, Start, End, and Suffix
+    m = re.match(r"(.*?)\[(\d+):(\d+)\](.*)", host)
     if m:
-        prefix, start, end = m.groups()
-        return [f"{prefix}{i}" for i in range(int(start), int(end)+1)]
+        prefix, start, end, suffix = m.groups()
+        
+        # Preserves leading zeros if your range is [01:03]
+        pad = len(start) if start.startswith('0') else 0
+        
+        # Rebuild the string including the suffix
+        return [f"{prefix}{str(i).zfill(pad)}{suffix}" for i in range(int(start), int(end)+1)]
+        
     return [host]
 
-# Parse inventory.ini and return all hosts (exclude groups)
+# Parse inventory file and return all hosts (exclude groups)
 def get_hosts(inventory_file):
+    if not os.path.exists(inventory_file):
+        print(f"❌ Error: Inventory file '{inventory_file}' not found.")
+        sys.exit(1)
+
     hosts = []
     groups = set()
 
@@ -73,8 +101,6 @@ def ensure_host_vars(hostname):
     path = os.path.join(HOST_VARS_DIR, hostname)
     os.makedirs(path, exist_ok=True)
     return path
-
-import tempfile
 
 # Cache vault password to a temporary file
 @lru_cache(maxsize=1)
@@ -116,8 +142,21 @@ def write_encrypted_vault(hostname):
 # -------------------------
 
 def main():
-    hosts = get_hosts(INVENTORY_FILE)
+    # Setup CLI argument parsing
+    parser = argparse.ArgumentParser(description="Generate encrypted Ansible vault files from a 1Password backend.")
+    parser.add_argument(
+        "-i", "--inventory", 
+        type=str, 
+        default=get_default_inventory(),
+        help="Path to the custom inventory file. Defaults to ansible.cfg selection or inventory.ini."
+    )
+    args = parser.parse_args()
+
+    print(f"📋 Using inventory file: {args.inventory}")
+    
+    hosts = get_hosts(args.inventory)
     print("Found hosts:", hosts)
+    
     for host in hosts:
         write_encrypted_vault(host)
 

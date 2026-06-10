@@ -1,0 +1,10 @@
+---
+- name: Cleanup SSH Key
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Ensure private key is deleted
+      ansible.builtin.file:
+        path: /home/swage/private_key
+        state: absent

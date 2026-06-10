@@ -37,7 +37,7 @@ def write_ansible_vault_yaml(filepath: str, vault_password: str, **data):
     try:
         # Encrypt using ansible-vault
         process = subprocess.run(
-            ["ansible-vault", "encrypt", tmp_yaml_path, "--output", str(filepath), "--vault-password-file", tmp_pass_path],
+            ["ansible-vault", "encrypt", tmp_yaml_path, "--output", str(filepath), "--vault-password-file", tmp_pass_path, "--encrypt-vault-id", "default"],
             check=True
         )
         if process.returncode != 0:
