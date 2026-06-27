@@ -66,7 +66,9 @@ def main():
         COUCHDB_USER=fetch_item("CouchDB", "Home Lab", "username"),
         COUCHDB_USER_PASSWORD=fetch_item("CouchDB", "Home Lab", "password"),
         n8n_postgres_password=fetch_item("n8n PostgreSQL password", "Home Lab", "password"),
-        n8n_runner_password=fetch_item("n8n runner password", "Home Lab", "password")
+        n8n_runner_password=fetch_item("n8n runner password", "Home Lab", "password"),
+        jumpbox_git_email=fetch_item("Jumpbox-Git", "Home Lab", "email"),
+        jumpbox_git_name=fetch_item("Jumpbox-Git", "Home Lab", "username")
     )
 
 if __name__ == "__main__":

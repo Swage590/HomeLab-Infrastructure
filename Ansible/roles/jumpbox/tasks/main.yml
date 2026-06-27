@@ -7,3 +7,6 @@
 
 - name: Install 1Password CLI
   ansible.builtin.include_tasks: 1password-cli-playbook.yaml
+
+- name: Configure Git
+  ansible.builtin.include_tasks: configure-git.yaml

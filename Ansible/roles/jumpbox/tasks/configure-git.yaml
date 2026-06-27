@@ -1,0 +1,30 @@
+---
+- name: Configure Git Email
+  community.general.git_config:
+    name: user.email
+    scope: global
+    value: "{{ jumpbox_git_email }}"
+
+- name: Configure Git Name
+  community.general.git_config:
+    name: user.name
+    scope: global
+    value: "{{ jumpbox_git_name }}"
+
+- name: Configure Git to use SSH for commit signing
+  community.general.git_config:
+    name: commit.gpgsign
+    scope: global
+    value: "true"
+
+- name: Configure Git to use SSH format for GPG
+  community.general.git_config:
+    name: gpg.format
+    scope: global
+    value: "ssh"
+
+- name: Configure Git signing key
+  community.general.git_config:
+    name: user.signingkey
+    scope: global
+    value: "{{ jumpbox_git_signing_key }}"
