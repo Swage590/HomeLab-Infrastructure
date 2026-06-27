@@ -1,0 +1,27 @@
+---
+- name: Install prerequisite packages for Terraform
+  ansible.builtin.apt:
+    name:
+      - curl
+      - gnupg
+      - software-properties-common
+      - apt-transport-https
+      - python3-debian
+    state: present
+    update_cache: yes
+
+- name: Add HashiCorp repository
+  ansible.builtin.deb822_repository:
+    name: hashicorp
+    types: [deb]
+    uris: https://apt.releases.hashicorp.com
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: [main]
+    signed_by: https://apt.releases.hashicorp.com/gpg
+    state: present
+
+- name: Install Terraform
+  ansible.builtin.apt:
+    name: terraform
+    state: present
+    update_cache: yes

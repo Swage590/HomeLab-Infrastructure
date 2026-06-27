@@ -1,2 +1,0 @@
-- name: Ensure DHCP is configured in the netplan for XCP-ng Debian Based VMs
-  include_tasks: ubuntu-dhcp-playbook.yaml

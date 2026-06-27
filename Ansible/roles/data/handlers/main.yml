@@ -9,3 +9,9 @@
     cmd: docker compose -f docker-compose.yaml up -d
   args:
     chdir: "/home/{{ ansible_user }}/MariaDB"
+
+- name: Restart couchDB
+  ansible.builtin.command:
+    cmd: docker compose -f docker-compose.yaml up -d
+  args:
+    chdir: "/home/{{ ansible_user }}/couchdb"

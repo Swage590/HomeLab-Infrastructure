@@ -2,13 +2,14 @@ version: '3.1'
 
 services:
   db:
+    container_name: maria-db-host
     hostname: maria-db-host
     image: mariadb
     restart: always
     ports:
       - 3306:3306
     environment:
-      MARIADB_ROOT_PASSWORD: {{ MARIADB_ROOT_PASSWORD }}
+      MARIADB_ROOT_PASSWORD: '{{ MARIADB_ROOT_PASSWORD }}'
 
   adminer:
     image: adminer
@@ -18,13 +19,15 @@ services:
 
   db-backup:
     container_name: maria-db-backup
+    depends_on:
+      - db
     image: tiredofit/db-backup
     restart: always
     volumes:
       - /mnt/main/Backups/database:/backup
     environment:
       - TIMEZONE=America/New_York
-      - CONTAINER_NAME=example-db-backup
+      - CONTAINER_NAME=maria-db-backup
       - CONTAINER_ENABLE_MONITORING=FALSE
       # - DEBUG_MODE=TRUE
 
@@ -36,7 +39,7 @@ services:
       - DEFAULT_CLEANUP_TIME=8640    # Cleanup backups after a week
 
       - DB01_TYPE=mariadb
-      - DB01_HOST=maria-db-host
+      - DB01_HOST=db
       - DB01_NAME=ALL
       - DB01_USER=root
       - DB01_PASS={{ MARIADB_ROOT_PASSWORD }}

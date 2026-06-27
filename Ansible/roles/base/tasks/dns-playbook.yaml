@@ -2,7 +2,7 @@
   ansible.builtin.apt:
     name: systemd
     state: present
-  when: ansible_service_mgr == "systemd"
+  when: ansible_facts["service_mgr"] == "systemd"
 
 - name: Configure DNS in /etc/systemd/resolved.conf
   ansible.builtin.blockinfile:
@@ -12,7 +12,7 @@
       [Resolve]
       DNS={{ dns_servers | join(" ") }}
       FallbackDNS={{ fallback_dns_servers | join(" ") }}
-      Domains=swage
+      Domains={{ tld_domain | lower }}
       DNSStubListener=yes
   notify: Restart systemd-resolved
 

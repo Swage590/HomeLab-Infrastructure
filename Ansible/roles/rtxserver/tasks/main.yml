@@ -1,0 +1,2 @@
+- name: Deploy Servarr Stack
+  ansible.builtin.include_tasks: servarr-playbook.yaml

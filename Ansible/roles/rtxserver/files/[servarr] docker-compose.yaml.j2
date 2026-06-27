@@ -62,9 +62,9 @@ services:
       - UID=1000 # The UID to run emby as (default: 2)
       - GID=1000 # The GID to run emby as (default 2)
     volumes:
-      - /docker/appdata/emby:/config # DO NOT CHANGE, BREAKS IF ON SMB SHARE FOR SOME REASON
+      - {{ servarr_config_dir }}/emby:/config # DO NOT CHANGE, BREAKS IF ON SMB SHARE FOR SOME REASON
       - "{{ servarr_media_dir }}:/mnt/share1" # Media directory
-      - /etc/letsencrypt/live/emby.swages.net/:/certs   # Mount certs directory
+      - /etc/letsencrypt/live/{{ emby_domain | default('emby.swages.net') }}/:/certs   # Mount certs directory
     ports:
       - 8096:8096 # HTTP port
       - 8920:8920 # HTTPS port
@@ -87,3 +87,19 @@ services:
       - 6881:6881
       - 6881:6881/udp
     restart: unless-stopped
+
+  cleanuparr:
+    image: ghcr.io/cleanuparr/cleanuparr:latest
+    container_name: cleanuparr
+    restart: unless-stopped
+    ports:
+      - "11011:11011"
+    volumes:
+      - "{{ servarr_config_dir }}/cleanuparr:/config"
+    environment:
+      - PORT=11011
+      - BASE_PATH=
+      - PUID=1000
+      - PGID=1000
+      - UMASK=022
+      - TZ=America/New_York

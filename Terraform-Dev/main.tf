@@ -29,43 +29,66 @@ resource "unifi_user" "client" {
   local_dns_record = "${each.value.name}.${var.domain}"
 }
 
-resource "xenorchestra_vm" "ubuntu_vm" {
-  for_each          = var.vms
+resource "proxmox_virtual_environment_file" "user_data" {
+  for_each     = var.vms
+  content_type = "snippets"
+  datastore_id = "local"
+  node_name    = "proxmox"
 
-  name_label        = each.value.name
-  name_description  = "[DEV] Created by Terraform"
-  memory_max        = each.value.memory * 1024 * 1024 * 1024 # Convert GB to bytes
-  cpus              = each.value.cpu
-  auto_poweron      = true
-  hvm_boot_firmware = "uefi"
+  source_raw {
+    data = templatefile("${path.module}/user-data.yml.tftpl", {
+      hostname        = each.value.name
+      username        = "swage"
+      password        = onepassword_item._1pass_vm_entry[each.key].password
+      fqdn            = "${each.value.name}.${var.domain}"
+    })
+    file_name = "user-data-${each.key}.yml"
+  }
+}
 
-  # Template (find the template UUID with `terraform import` or `xo-cli`)
-  template = "9b60187e-5bf1-ccb8-9c2d-bd58b275248b"
+resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
+  for_each    = var.vms
+
+  name        = each.value.name
+  description = "[DEV] Created by Terraform"
+  node_name   = "proxmox"
+  
+  cpu {
+    cores = each.value.cpu
+  }
+
+  memory {
+    dedicated = each.value.memory * 1024 # Convert GB to MB
+  }
+
+  clone {
+    vm_id = 100
+  }
 
   tags = [
-      "Ubuntu",
-      "Terraform Managed",
+      "ubuntu",
+      "terraform-managed",
   ]
 
   disk {
-    sr_id      = "32add21e-26ca-7eb7-c309-1c3f3df995d2" # Storage repository UUID
-    name_label = "ubuntu-disk"
-    size       = 107374182400 # 100 GB in bytes
+    datastore_id = "local-lvm"
+    interface    = "scsi0"
+    size         = 100
   }
 
-  network {
-    network_id = "3a9068fc-44bd-b6a7-0377-50cdedda0e34" # Network UUID
-    mac_address = unifi_user.client[each.key].mac
+  network_device {
+    bridge      = "vmbr0"
+    mac_address = upper(unifi_user.client[each.key].mac)
   }
 
-  // highlight-start
-  # Pass the cloud-init configuration directly
-  cloud_config = templatefile("${path.module}/user-data.yml.tftpl", {
-    hostname        = each.value.name
-    username        = "swage"
-    password        = onepassword_item._1pass_vm_entry[each.key].password
-    fqdn            = "${each.value.name}.${var.domain}"
-  })
+  initialization {
+    user_data_file_id = proxmox_virtual_environment_file.user_data[each.key].id
+    ip_config {
+      ipv4 {
+        address = "dhcp"
+      }
+    }
+  }
 }
 
 data "onepassword_item" "vm_temp_creds" {

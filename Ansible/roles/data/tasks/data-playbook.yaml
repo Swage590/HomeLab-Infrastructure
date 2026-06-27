@@ -3,7 +3,7 @@
   ansible.builtin.file:
     path: "/home/{{ ansible_user }}/nginx-lb/"
     state: directory
-    mode: '0755'
+    mode: "0755"
 
 - name: Copy nginx.conf for nginx-lb
   ansible.builtin.template:
@@ -11,7 +11,7 @@
     dest: "/home/{{ ansible_user }}/nginx-lb/nginx.conf"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-    mode: '0644'
+    mode: "0644"
   notify: Restart nginx-lb
 
 - name: Copy docker-compose.yaml for nginx-lb
@@ -20,7 +20,7 @@
     dest: "/home/{{ ansible_user }}/nginx-lb/docker-compose.yaml"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-    mode: '0644'
+    mode: "0644"
   notify: Restart nginx-lb
 
 - name: Ensure nginx-lb Docker Compose project is running
@@ -34,7 +34,7 @@
   ansible.builtin.file:
     path: "/home/{{ ansible_user }}/MariaDB/"
     state: directory
-    mode: '0755'
+    mode: "0755"
 
 - name: Copy docker-compose.yaml for MariaDB
   ansible.builtin.template:
@@ -42,7 +42,7 @@
     dest: "/home/{{ ansible_user }}/MariaDB/docker-compose.yaml"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-    mode: '0644'
+    mode: "0644"
   notify: Restart MariaDB
 
 - name: Ensure MariaDB Docker Compose project is running
@@ -50,3 +50,108 @@
     project_src: "/home/{{ ansible_user }}/MariaDB/"
     state: present
     pull: always
+
+# ---------------- couchDB ----------------
+- name: Ensure couchDB project directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/couchdb/"
+    state: directory
+    mode: "0755"
+
+- name: Ensure couchdb-data directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/couchdb/couchdb-data"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+
+- name: Check if couchdb-data is empty (fresh install)
+  ansible.builtin.find:
+    paths: "/home/{{ ansible_user }}/couchdb/couchdb-data"
+    hidden: yes
+  register: couchdb_data_files
+
+- name: Check if CouchDB rsync backup exists
+  ansible.builtin.stat:
+    path: "/mnt/main/Backups/database/couchDB/couchdb-data-sync/"
+  register: couchdb_backup_dir
+
+- name: Restore CouchDB Data from rsync backup (ONLY on Fresh Install)
+  ansible.builtin.command:
+    cmd: "rsync -a /mnt/main/Backups/database/couchDB/couchdb-data-sync/ /home/{{ ansible_user }}/couchdb/couchdb-data/"
+  when:
+    - couchdb_data_files.matched == 0
+    - couchdb_backup_dir.stat.exists and couchdb_backup_dir.stat.isdir
+
+- name: Ensure couchdb-etc directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/couchdb/couchdb-etc"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+
+- name: Configure CouchDB for Obsidian LiveSync (CORS and Limits)
+  ansible.builtin.copy:
+    dest: "/home/{{ ansible_user }}/couchdb/couchdb-etc/cors.ini"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+    content: |
+      [httpd]
+      enable_cors = true
+
+      [chttpd]
+      enable_cors = true
+      max_http_request_size = 4294967296
+
+      [couchdb]
+      max_document_size = 50000000
+
+      [cors]
+      origins = ,app://obsidian.md,capacitor://localhost,http://localhost
+      credentials = true
+      methods = GET, PUT, POST, HEAD, DELETE
+      headers = accept, authorization, content-type, origin, referer, x-csrf-token
+  notify: Restart couchDB
+
+- name: Copy docker-compose.yaml for couchDB
+  ansible.builtin.template:
+    src: "files/[couchDB] docker-compose.yaml.j2"
+    dest: "/home/{{ ansible_user }}/couchdb/docker-compose.yaml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+  notify: Restart couchDB
+
+- name: Ensure couchDB Docker Compose project is running
+  community.docker.docker_compose_v2:
+    project_src: "/home/{{ ansible_user }}/couchdb/"
+    state: present
+    pull: always
+
+- name: Wait for CouchDB API to become available
+  ansible.builtin.wait_for:
+    port: 5984
+    delay: 5
+    timeout: 60
+    msg: "CouchDB did not start in time."
+
+- name: Ensure _users database exists
+  ansible.builtin.uri:
+    url: "http://localhost:5984/_users"
+    method: PUT
+    user: "{{ COUCHDB_USER }}"
+    password: "{{ COUCHDB_USER_PASSWORD }}"
+    force_basic_auth: yes
+    status_code: [201, 202, 412]
+
+- name: Ensure _replicator database exists
+  ansible.builtin.uri:
+    url: "http://localhost:5984/_replicator"
+    method: PUT
+    user: "{{ COUCHDB_USER }}"
+    password: "{{ COUCHDB_USER_PASSWORD }}"
+    force_basic_auth: yes
+    status_code: [201, 202, 412]

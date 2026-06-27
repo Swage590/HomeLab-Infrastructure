@@ -1,13 +1,21 @@
-- name: Add Smallstep apt key
-  ansible.builtin.get_url:
-    url: https://packages.smallstep.com/keys/apt/repo-signing-key.gpg
-    dest: /etc/apt/trusted.gpg.d/smallstep.asc
-    mode: '0644'
+- name: Ensure python3-debian is installed for deb822_repository
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
+
+- name: Remove legacy Smallstep apt repository file
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/smallstep.list
+    state: absent
 
 - name: Add Smallstep apt repository
-  ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/etc/apt/trusted.gpg.d/smallstep.asc] https://packages.smallstep.com/stable/debian debs main"
-    filename: smallstep
+  ansible.builtin.deb822_repository:
+    name: smallstep
+    types: [deb]
+    uris: https://packages.smallstep.com/stable/debian
+    suites: [debs]
+    components: [main]
+    signed_by: https://packages.smallstep.com/keys/apt/repo-signing-key.gpg
     state: present
 
 - name: Ensure step-cli and dependencies are installed
@@ -34,7 +42,7 @@
 - name: Create systemd service for certificate renewal
   ansible.builtin.copy:
     dest: /root/.provisioner-password
-    mode: '0600'
+    mode: "0600"
     owner: root
     content: "{{ certificates_provisioner_password }}"
   notify: Restart SSH
@@ -42,7 +50,7 @@
 - name: Ensure host is configured to use it's certs
   ansible.builtin.copy:
     dest: /etc/ssh/sshd_config.d/10-step-host-cert.conf
-    mode: '0644'
+    mode: "0644"
     owner: root
     content: |
       HostKey /etc/ssh/ssh_host_ecdsa_key
@@ -58,46 +66,52 @@
   ansible.builtin.set_fact:
     cert_has_principals: >-
       {{
-        ssh_cert_info.stdout is search('Principals:\s*' ~ (ansible_hostname | lower) ~ '\s*' ~ (ansible_fqdn | lower))
+        ssh_cert_info.stdout is search('Principals:\s*' ~ (ansible_facts['hostname'] | lower) ~ '\s*' ~ (ansible_facts['fqdn'] | lower))
       }}
   when: ssh_cert_info.rc == 0
+
+- name: Check if SSH host certificate needs renewal
+  ansible.builtin.command: step ssh needs-renewal /etc/ssh/ssh_host_ecdsa_key-cert.pub
+  register: ssh_cert_renewal
+  failed_when: ssh_cert_renewal.rc not in [0, 1]
+  changed_when: false
+  when: cert_has_principals | default(false)
 
 - name: Generate SSH host certificate
   ansible.builtin.command: >
     step ssh certificate
-    {{ ansible_fqdn | lower }}
+    {{ ansible_facts['fqdn'] | lower }}
     /etc/ssh/ssh_host_ecdsa_key
-    --principal {{ ansible_hostname | lower }}
-    --principal {{ ansible_fqdn | lower }}
+    --principal {{ ansible_facts['hostname'] | lower }}
+    --principal {{ ansible_facts['fqdn'] | lower }}
     --provisioner swage-jwk-provisioner
     --force --host --no-password --insecure
     --provisioner-password-file /root/.provisioner-password
   notify: Restart SSH
-  when: not cert_has_principals | default(false)
-
+  when: not cert_has_principals | default(false) or ssh_cert_renewal.rc | default(1) == 0
 
 - name: Create systemd service for certificate renewal
   ansible.builtin.copy:
     dest: /etc/systemd/system/step-ssh-renew.service
-    mode: '0644'
+    mode: "0644"
     content: |
       [Unit]
       Description=Renew SSH host certificate using step
 
       [Service]
       Type=oneshot
-      ExecStart=/usr/bin/step ssh certificate {{ ansible_fqdn | lower }} /etc/ssh/ssh_host_ecdsa_key \
-        --principal {{ ansible_hostname | lower }} \
-        --principal {{ ansible_fqdn | lower }} \
+      ExecStart=/usr/bin/step ssh certificate {{ ansible_facts['fqdn'] | lower }} /etc/ssh/ssh_host_ecdsa_key \
+        --principal {{ ansible_facts['hostname'] | lower }} \
+        --principal {{ ansible_facts['fqdn'] | lower }} \
         --provisioner swage-jwk-provisioner \
-        --host --no-password --insecure \
+        --force --host --no-password --insecure \
         --provisioner-password-file /root/.provisioner-password
       ExecStartPost=/bin/systemctl restart ssh
 
 - name: Create systemd timer for daily 5am renewal
   ansible.builtin.copy:
     dest: /etc/systemd/system/step-ssh-renew.timer
-    mode: '0644'
+    mode: "0644"
     content: |
       [Unit]
       Description=Daily renewal of SSH host certificate at 5am

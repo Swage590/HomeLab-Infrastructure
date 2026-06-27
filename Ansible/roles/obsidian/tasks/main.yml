@@ -1,0 +1,2 @@
+- name: Deploy Obsidian Docker Container
+  ansible.builtin.include_tasks: obsidian-playbook.yaml

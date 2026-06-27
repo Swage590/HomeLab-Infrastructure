@@ -1,10 +1,15 @@
+- name: Ensure timg is installed
+  ansible.builtin.apt:
+    name: timg
+    state: present
+
 - name: Copy the SPLASHTEXT script
   ansible.builtin.copy:
     src: files/swage-banner.sh
     dest: /etc/profile.d/swage-banner.sh
     owner: root
     group: root
-    mode: '665'
+    mode: "665"
 
 - name: Copy the list of fav fonts
   ansible.builtin.copy:
@@ -12,7 +17,7 @@
     dest: /etc/profile.d/fontlist
     owner: root
     group: root
-    mode: '664'
+    mode: "664"
 
 - name: Copy the figurine binary
   ansible.builtin.copy:
@@ -20,4 +25,40 @@
     dest: /bin/figurine
     owner: root
     group: root
-    mode: '775'
+    mode: "775"
+
+- name: Ensure .hushlogin exists for the login user
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.hushlogin"
+    state: touch
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+    modification_time: preserve
+    access_time: preserve
+
+- name: Ensure .hushlogin exists for root
+  ansible.builtin.file:
+    path: /root/.hushlogin
+    state: touch
+    owner: root
+    group: root
+    mode: "0644"
+    modification_time: preserve
+    access_time: preserve
+
+- name: Check if custom banner image exists on controller
+  ansible.builtin.stat:
+    path: "{{ role_path }}/files/custom-banners/{{ ansible_facts['hostname'] | regex_replace('[0-9]+$', '') }}.png"
+  delegate_to: localhost
+  register: custom_banner_file
+  become: false
+
+- name: Copy custom banner image
+  ansible.builtin.copy:
+    src: "files/custom-banners/{{ ansible_facts['hostname'] | regex_replace('[0-9]+$', '') }}.png"
+    dest: /etc/profile.d/custom.png
+    owner: root
+    group: root
+    mode: "0644"
+  when: custom_banner_file.stat.exists

@@ -1,7 +1,7 @@
 - name: Run Watchtower container with notifications
   community.docker.docker_container:
     name: watchtower
-    hostname: "{{ ansible_hostname }}-watchtower"
+    hostname: "{{ ansible_facts['hostname'] }}-watchtower"
     image: containrrr/watchtower
     state: started
     restart_policy: unless-stopped
@@ -14,4 +14,4 @@
       DOCKER_API_VERSION: "1.52"
       WATCHTOWER_SCHEDULE: "0 0 4 * * *"
       TZ: "America/New_York"
-      WATCHTOWER_CLEANUP: true
+      WATCHTOWER_CLEANUP: "true"

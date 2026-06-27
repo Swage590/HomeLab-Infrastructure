@@ -1,0 +1,32 @@
+services:
+  couchdb:
+    image: couchdb:latest
+    container_name: couchdb-for-ols
+    user: 1000:1000
+    environment:
+      - COUCHDB_USER={{ COUCHDB_USER }}
+      - COUCHDB_PASSWORD={{ COUCHDB_USER_PASSWORD }}
+    volumes:
+      - /home/{{ ansible_user }}/couchdb/couchdb-data:/opt/couchdb/data
+      - /home/{{ ansible_user }}/couchdb/couchdb-etc:/opt/couchdb/etc/local.d
+    ports:
+      - 5984:5984
+    restart: unless-stopped
+  couchdb-backup:
+    image: alpine:latest
+    container_name: couchdb-scheduled-backup
+    restart: unless-stopped
+    depends_on:
+      - couchdb
+    volumes:
+      - /home/{{ ansible_user }}/couchdb/couchdb-data:/couchdb-data:ro
+      - /mnt/main/Backups/database/couchDB/:/backup
+    command: >
+      /bin/sh -c "
+      apk add --no-cache rsync &&
+      echo '#!/bin/sh' > /run_backup.sh &&
+      echo 'rsync -a --delete /couchdb-data/ /backup/couchdb-data-sync/' >> /run_backup.sh &&
+      chmod +x /run_backup.sh &&
+      echo '0 2 * * * /run_backup.sh' > /etc/crontabs/root &&
+      crond -f -l 2
+      "

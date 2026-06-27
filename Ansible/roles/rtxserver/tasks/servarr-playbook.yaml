@@ -2,7 +2,7 @@
   ansible.builtin.file:
     path: /home/{{ ansible_user }}/servarr/
     state: directory
-    mode: '664'
+    mode: "774"
 
 - name: Copy servarr docker-compose.yaml to compose dir
   ansible.builtin.template:
@@ -10,7 +10,7 @@
     dest: "/home/{{ ansible_user }}/servarr/docker-compose.yaml"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-    mode: '664'
+    mode: "664"
 
 - name: Make sure servarr docker-compose project is running
   community.docker.docker_compose_v2:

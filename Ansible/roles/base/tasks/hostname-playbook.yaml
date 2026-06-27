@@ -6,17 +6,17 @@
 - name: Change hostname if needed
   ansible.builtin.hostname:
     name: "{{ fqdn_hostname }}"
-  when: ansible_fqdn != fqdn_hostname
+  when: ansible_facts["fqdn"] != fqdn_hostname
 
 - name: Update /etc/hosts entry
   ansible.builtin.lineinfile:
     path: /etc/hosts
-    regexp: "^{{ ansible_default_ipv4.address }}\\s"
-    line: "{{ ansible_default_ipv4.address }} {{ fqdn_hostname }} {{ short_hostname }}"
+    regexp: "^{{ ansible_facts['default_ipv4']['address'] }}\\s"
+    line: "{{ ansible_facts['default_ipv4']['address'] }} {{ fqdn_hostname }} {{ short_hostname }}"
     state: present
-  when: ansible_fqdn != fqdn_hostname
+  when: ansible_facts["fqdn"] != fqdn_hostname
 
 - name: Assure kernel domain name
   ansible.builtin.command: domainname {{ tld_domain }}
   changed_when: my_output.rc != 0 # <- Uses the return code to define when the task has changed.
-  when: ansible_domain != tld_domain
+  when: ansible_facts["domain"] != tld_domain

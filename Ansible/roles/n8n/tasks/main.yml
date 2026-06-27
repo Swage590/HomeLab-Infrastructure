@@ -1,0 +1,2 @@
+- name: Deploy n8n Docker Container
+  ansible.builtin.include_tasks: n8n-playbook.yaml

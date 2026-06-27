@@ -1,0 +1,8 @@
+sharedrive_server: "nas-dev.dev-swage"
+certificates_ca_address_or_ip: "10.59.99.7"
+smtp_server: "prince-dev.dev-swage"
+dns_servers:
+  - "10.59.99.1"
+tld_domain: "dev-swage"
+email_domain: "dev-swages.cloud"
+emby_domain: "emby-dev.swages.net"

@@ -1,0 +1,5 @@
+- name: Restart obsidian
+  ansible.builtin.command:
+    cmd: docker compose -f docker-compose.yaml up -d
+  args:
+    chdir: "/home/{{ ansible_user }}/obsidian"

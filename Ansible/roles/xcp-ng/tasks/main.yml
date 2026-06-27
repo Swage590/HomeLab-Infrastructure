@@ -1,2 +1,4 @@
 - name: Install Hypervisor Guest Utilities are installed
   include_tasks: xcp-ng-guest-utils-playbook.yaml
+- name: Ensure DHCP is configured in the netplan for XCP-ng Debian Based VMs
+  include_tasks: ubuntu-dhcp-playbook.yaml

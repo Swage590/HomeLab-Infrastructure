@@ -118,8 +118,9 @@ def write_encrypted_vault(hostname):
     path = ensure_host_vars(hostname)
     vault_file_path = os.path.join(path, VAULT_FILE_NAME)
 
-    username = fetch_item(hostname, "Ansible", "username")
-    password = fetch_item(hostname, "Ansible", "password")
+    short_hostname = hostname.split('.')[0]
+    username = fetch_item(short_hostname, "Ansible", "username")
+    password = fetch_item(short_hostname, "Ansible", "password")
 
     with open(vault_file_path, "w") as f:
         f.write(f"ansible_user: {username}\n")
@@ -150,11 +151,26 @@ def main():
         default=get_default_inventory(),
         help="Path to the custom inventory file. Defaults to ansible.cfg selection or inventory.ini."
     )
+    parser.add_argument(
+        "-l", "--limit",
+        type=str,
+        default=None,
+        help="Further limit selected hosts to an additional pattern."
+    )
     args = parser.parse_args()
 
     print(f"📋 Using inventory file: {args.inventory}")
     
     hosts = get_hosts(args.inventory)
+    
+    if args.limit:
+        # Simple limit implementation (comma separated hosts)
+        limit_list = args.limit.split(',')
+        # Only keep hosts that match the limit literally for now. 
+        # (A full ansible pattern matcher would be complex, but this covers basic usage)
+        hosts = [h for h in hosts if h in limit_list]
+        print(f"Applying limit '{args.limit}'")
+
     print("Found hosts:", hosts)
     
     for host in hosts:

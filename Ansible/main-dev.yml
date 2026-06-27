@@ -4,13 +4,11 @@
   roles:
     - role: base
       become: true
-    - role: sharedrive
-      become: true
-    - role: certificates
-      become: true
+    # - role: sharedrive
+    #   become: true
+    # - role: certificates
+    #   become: true
     - role: auto_reboot
-      become: true
-    - role: ubuntu
       become: true
 
 - hosts: proxmox
@@ -20,12 +18,7 @@
 
 - hosts: xcp-ng
   roles:
-    - role: ubuntu
-      become: true
-
-- hosts: ubuntu
-  roles:
-    - role: ubuntu
+    - role: xcp-ng
       become: true
 
 - hosts: general
@@ -37,23 +30,24 @@
 
 - hosts: master_node
   roles:
-    - role: k3s_master
-      become: true
+    # - role: k3s_master
+    #   become: true
 
 - hosts: worker_node
   roles:
-    - role: k3s_worker
-      become: true
-
+    # - role: k3s_worker
+    #   become: true
 
 # Host Specific Configurations
 
-- hosts: Prince
+- hosts: prince-dev.dev-swage
   roles:
-  - role: prince
-    become: true
+    - role: obsidian
+      become: true
+    - role: prince
+      become: true
 
-- hosts: Data
+- hosts: data-dev.dev-swage
   roles:
-  - role: data
-    become: true
+    - role: data
+      become: true

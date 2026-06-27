@@ -63,6 +63,10 @@ def main():
         k3s_token=fetch_item("K3s Node Token", "Home Lab", "password"),
         k3s_tls_san=fetch_item("k3s", "Home Lab", "url"),
         discord_webhook_url=fetch_item("SMTP_discord_webhook_url", "Home Lab", "password"),
+        COUCHDB_USER=fetch_item("CouchDB", "Home Lab", "username"),
+        COUCHDB_USER_PASSWORD=fetch_item("CouchDB", "Home Lab", "password"),
+        n8n_postgres_password=fetch_item("n8n PostgreSQL password", "Home Lab", "password"),
+        n8n_runner_password=fetch_item("n8n runner password", "Home Lab", "password")
     )
 
 if __name__ == "__main__":

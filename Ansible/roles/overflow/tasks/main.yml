@@ -1,0 +1,9 @@
+---
+- name: Install Ansible
+  ansible.builtin.include_tasks: ansible-playbook.yaml
+
+- name: Install Terraform
+  ansible.builtin.include_tasks: terraform-playbook.yaml
+
+- name: Install 1Password CLI
+  ansible.builtin.include_tasks: 1password-cli-playbook.yaml

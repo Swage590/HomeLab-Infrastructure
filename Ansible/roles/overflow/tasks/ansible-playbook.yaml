@@ -1,0 +1,24 @@
+---
+- name: Install prerequisite packages for Ansible
+  ansible.builtin.apt:
+    name:
+      - software-properties-common
+      - python3-debian
+    state: present
+    update_cache: yes
+
+- name: Add Ansible PPA
+  ansible.builtin.deb822_repository:
+    name: ansible
+    types: [deb]
+    uris: https://ppa.launchpadcontent.net/ansible/ansible/ubuntu
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: [main]
+    signed_by: "https://keyserver.ubuntu.com/pks/lookup?fingerprint=on&op=get&search=0x6125E2A8C77F2818FB7BD15B93C4A3FD7BB9C367"
+    state: present
+
+- name: Install Ansible
+  ansible.builtin.apt:
+    name: ansible
+    state: present
+    update_cache: yes

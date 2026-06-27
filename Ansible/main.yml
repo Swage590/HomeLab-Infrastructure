@@ -10,57 +10,58 @@
       become: true
     - role: auto_reboot
       become: true
-    - role: ubuntu
+
+- hosts: proxmox
+  roles:
+    - role: proxmox
       become: true
 
-# - hosts: proxmox
-#   roles:
-#     - role: proxmox
-#       become: true
+- hosts: xcp-ng
+  roles:
+    - role: xcp-ng
+      become: true
 
-# - hosts: xcp-ng
-#   roles:
-#     - role: ubuntu
-#       become: true
+- hosts: xcp-ng
+  roles:
+    - role: xcp-ng
+      become: true
 
-# - hosts: ubuntu
-#   roles:
-#     - role: ubuntu
-#       become: true
-
-# - hosts: general
-#   roles:
-#     - role: docker
-#       become: true
+- hosts: general
+  roles:
+    - role: docker
+      become: true
 
 # Dependant Configurations
 
-# - hosts: master_node
-#   roles:
-#     - role: k3s_master
-#       become: true
+- hosts: master_node
+  roles:
+    - role: k3s_master
+      become: true
 
-# - hosts: worker_node
-#   roles:
-#     - role: k3s_worker
-#       become: true
-
+- hosts: worker_node
+  roles:
+    - role: k3s_worker
+      become: true
 
 # Host Specific Configurations
 
-# - hosts: Prince
-#   roles:
-#   - role: prince
-#     become: true
+- hosts: prince
+  roles:
+    - role: prince
+      become: true
+    # - role: obsidian
+    - role: n8n
 
-# - hosts: Data
-#   roles:
-#   - role: data
-#     become: true
+- hosts: data
+  roles:
+    - role: data
+      become: true
 
-# - name: Arch Greed
-#   hosts: 127.0.0.1
-#   connection: local
-#   become: yes
-#   roles:
-#     - sharedrive
+- hosts: overflow
+  roles:
+    - role: overflow
+      become: true
+
+- hosts: rtxserver
+  roles:
+    - role: rtxserver

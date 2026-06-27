@@ -40,7 +40,7 @@ resource "xenorchestra_vm" "ubuntu_vm" {
   hvm_boot_firmware = "uefi"
 
   # Template (find the template UUID with `terraform import` or `xo-cli`)
-  template = "9b60187e-5bf1-ccb8-9c2d-bd58b275248b"
+  template = "d5967e3a-46f9-0ec7-c320-80b6be8c9b5c"
 
   tags = [
       "Ubuntu",
