@@ -1,0 +1,13 @@
+---
+- name: Ensure .ssh directory exists
+  ansible.builtin.file:
+    path: ~/.ssh
+    state: directory
+    mode: '0700'
+
+- name: Add cert-authority to known_hosts
+  ansible.builtin.lineinfile:
+    path: ~/.ssh/known_hosts
+    line: '@cert-authority * ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBOyTirJkcPzrAGHmX1+0La837KDfoF5Kh1hS1NY4kp28zBdj0oJwLtWTCC9iY4C6UZ0zbSM2GA4MD3JhhixSP+U='
+    create: yes
+    mode: '0600'

@@ -84,17 +84,27 @@ def get_hosts(inventory_file):
 
     # Second pass: collect hostnames
     with open(inventory_file) as f:
+        in_vars_section = False
         for line in f:
             line = line.strip()
-            if not line or line.startswith("#") or "=" in line:
+            if not line or line.startswith("#"):
                 continue
             if line.startswith("[") and line.endswith("]"):
+                in_vars_section = line.endswith(":vars]")
                 continue
-            candidate_hosts = expand_host_range(line.split()[0])
+            
+            if in_vars_section:
+                continue
+
+            first_token = line.split()[0]
+            if "=" in first_token:
+                continue
+
+            candidate_hosts = expand_host_range(first_token)
             candidate_hosts = [h for h in candidate_hosts if h not in groups]
             hosts.extend(candidate_hosts)
 
-    return hosts
+    return list(dict.fromkeys(hosts))
 
 # Ensure host_vars/<hostname> directory exists
 def ensure_host_vars(hostname):

@@ -10,3 +10,12 @@
 
 - name: Configure Git
   ansible.builtin.include_tasks: configure-git.yaml
+  args:
+    apply:
+      become: false
+
+- name: Configure SSH Known Hosts
+  ansible.builtin.include_tasks: configure-ssh.yaml
+  args:
+    apply:
+      become: false
