@@ -1,0 +1,21 @@
+[Unit]
+Description=Smallstep CA Tarball Backup
+After=network.target
+
+[Service]
+Type=oneshot
+# Ensure the backup directory exists
+ExecStartPre=/bin/mkdir -p /mnt/main/Backups/step-ca
+
+# Stop the container safely before backing up to avoid database corruption
+ExecStartPre=/usr/bin/docker stop step-ca
+
+# Create a compressed tar archive of the 'step' and 'secrets' directories
+# Note: Using {{ ansible_user }} home directory
+ExecStart=/bin/bash -c "tar -czf /mnt/main/Backups/step-ca/step-ca-backup-$(date +%%Y%%m%%d-%%H%%M%%S).tar.gz -C /home/{{ ansible_user }}/step-ca step secrets"
+
+# Start the container back up
+ExecStartPost=/usr/bin/docker start step-ca
+
+# Clean up backups older than 30 days
+ExecStartPost=/bin/bash -c "find /mnt/main/Backups/step-ca/ -name 'step-ca-backup-*.tar.gz' -type f -mtime +30 -exec rm -f {} \\;"

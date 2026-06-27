@@ -1,0 +1,13 @@
+[Unit]
+Description=Timer for Smallstep CA Tarball Backup
+
+[Timer]
+# Run every day at 3:00 AM
+OnCalendar=*-*-* 03:00:00
+# Run immediately if a missed backup is detected (e.g. server was down)
+Persistent=true
+# Random delay up to 5 minutes to avoid thundering herds if multiple timers exist
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

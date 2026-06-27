@@ -1,0 +1,66 @@
+- name: Ensure step-ca project directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/step-ca"
+    state: directory
+    mode: "0755"
+
+- name: Check if step-ca/step directory exists and has files (fresh install check)
+  ansible.builtin.find:
+    paths: "/home/{{ ansible_user }}/step-ca/step"
+    hidden: yes
+  register: step_ca_data_files
+
+- name: Restore step-ca from most recent backup (ONLY on Fresh Install)
+  ansible.builtin.shell: |
+    latest_backup=$(ls -t /mnt/main/Backups/step-ca/step-ca-backup-*.tar.gz 2>/dev/null | head -n 1)
+    if [ -n "$latest_backup" ]; then
+      echo "Restoring step-ca from $latest_backup..."
+      tar -xzf "$latest_backup" -C "/home/{{ ansible_user }}/step-ca"
+    else
+      echo "No backup found to restore."
+    fi
+  when:
+    - step_ca_data_files.matched == 0
+  args:
+    executable: /bin/bash
+  register: step_ca_restore_output
+  changed_when: "'Restoring step-ca' in step_ca_restore_output.stdout"
+
+- name: Copy docker-compose.yaml for step-ca
+  ansible.builtin.template:
+    src: "files/[step-ca] docker-compose.yaml.j2"
+    dest: "/home/{{ ansible_user }}/step-ca/docker-compose.yaml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+  notify: Restart step-ca
+
+- name: Ensure step-ca Docker Compose project is running
+  community.docker.docker_compose_v2:
+    project_src: "/home/{{ ansible_user }}/step-ca/"
+    state: present
+    pull: always
+
+- name: Deploy step-ca backup systemd service
+  ansible.builtin.template:
+    src: "files/[step-ca] backup.service.j2"
+    dest: "/etc/systemd/system/step-ca-backup.service"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: Deploy step-ca backup systemd timer
+  ansible.builtin.template:
+    src: "files/[step-ca] backup.timer.j2"
+    dest: "/etc/systemd/system/step-ca-backup.timer"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Enable and start step-ca backup timer
+  ansible.builtin.systemd:
+    name: step-ca-backup.timer
+    enabled: yes
+    state: started
+    daemon_reload: yes

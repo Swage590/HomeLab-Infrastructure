@@ -1,0 +1,97 @@
+- name: Ensure MariaDB project directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/MariaDB/"
+    state: directory
+    mode: "0755"
+
+- name: Ensure MariaDB data directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/MariaDB/data"
+    state: directory
+    mode: "0755"
+
+- name: Copy docker-compose.yaml for MariaDB
+  ansible.builtin.template:
+    src: "files/[MariaDB] docker-compose.yaml.j2"
+    dest: "/home/{{ ansible_user }}/MariaDB/docker-compose.yaml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+  notify: Restart MariaDB
+
+- name: Ensure MariaDB Docker Compose project is running
+  community.docker.docker_compose_v2:
+    project_src: "/home/{{ ansible_user }}/MariaDB/"
+    state: present
+    pull: always
+
+- name: Wait for MariaDB to become available
+  ansible.builtin.wait_for:
+    port: 3306
+    delay: 10
+    timeout: 120
+    msg: "MariaDB did not start in time."
+
+- name: Check if MariaDB needs a restore
+  ansible.builtin.shell:
+    cmd: |
+      existing_dbs=$(docker exec maria-db-host mariadb -uroot -p'{{ MARIADB_ROOT_PASSWORD }}' -s -N -e "SHOW DATABASES;")
+      cd /mnt/main/Backups/database/
+      backed_up_dbs=$(ls mariadb_*_maria-db-host_*.sql.gz 2>/dev/null | sed -E 's/mariadb_(.*)_maria-db-host_.*/\1/' | sort -u)
+      system_dbs="information_schema mysql performance_schema sys"
+      missing_count=0
+      total_custom_dbs=0
+      for db in $backed_up_dbs; do
+        if echo "$system_dbs" | grep -qw "$db"; then continue; fi
+        total_custom_dbs=$((total_custom_dbs + 1))
+        if ! echo "$existing_dbs" | grep -qw "^$db$"; then missing_count=$((missing_count + 1)); fi
+      done
+      if [ "$total_custom_dbs" -gt 0 ] && [ "$missing_count" -gt 0 ]; then
+        echo "true"
+      else
+        echo "false"
+      fi
+  args:
+    executable: /bin/bash
+  register: needs_restore_check
+  changed_when: false
+
+- name: Restore Application Databases
+  ansible.builtin.shell:
+    cmd: |
+      cd /mnt/main/Backups/database/
+      backed_up_dbs=$(ls mariadb_*_maria-db-host_*.sql.gz 2>/dev/null | sed -E 's/mariadb_(.*)_maria-db-host_.*/\1/' | sort -u)
+      for db in $backed_up_dbs; do
+        # Skip all system DBs in this pass so we don't break authentication mid-restore
+        if [ "$db" = "information_schema" ] || [ "$db" = "performance_schema" ] || [ "$db" = "mysql" ] || [ "$db" = "sys" ]; then
+          continue
+        fi
+        latest_backup=$(ls -t mariadb_${db}_maria-db-host_*.sql.gz | head -n 1)
+        if [ -n "$latest_backup" ]; then
+          echo "Restoring $db from $latest_backup..."
+          docker exec maria-db-host mariadb -uroot -p'{{ MARIADB_ROOT_PASSWORD }}' -e "CREATE DATABASE IF NOT EXISTS \`$db\`;"
+          zcat "$latest_backup" | docker exec -i maria-db-host mariadb -uroot -p'{{ MARIADB_ROOT_PASSWORD }}' "$db"
+        fi
+      done
+  when: needs_restore_check.stdout == 'true'
+  args:
+    executable: /bin/bash
+
+- name: Restore System Databases (mysql, sys)
+  ansible.builtin.shell:
+    cmd: |
+      cd /mnt/main/Backups/database/
+      # We restore sys first, then mysql last to ensure we don't get locked out
+      for db in sys mysql; do
+        latest_backup=$(ls -t mariadb_${db}_maria-db-host_*.sql.gz 2>/dev/null | head -n 1)
+        if [ -n "$latest_backup" ]; then
+          echo "Restoring $db from $latest_backup..."
+          docker exec maria-db-host mariadb -uroot -p'{{ MARIADB_ROOT_PASSWORD }}' -e "CREATE DATABASE IF NOT EXISTS \`$db\`;"
+          zcat "$latest_backup" | docker exec -i maria-db-host mariadb -uroot -p'{{ MARIADB_ROOT_PASSWORD }}' "$db"
+        fi
+      done
+      # We try to flush privileges, but ignore failure if the password changed during mysql import
+      docker exec maria-db-host mariadb -uroot -p'{{ MARIADB_ROOT_PASSWORD }}' -e "FLUSH PRIVILEGES;" || true
+  when: needs_restore_check.stdout == 'true'
+  args:
+    executable: /bin/bash

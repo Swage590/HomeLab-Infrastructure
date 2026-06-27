@@ -15,3 +15,13 @@
     cmd: docker compose -f docker-compose.yaml up -d
   args:
     chdir: "/home/{{ ansible_user }}/couchdb"
+
+- name: Restart step-ca
+  ansible.builtin.command:
+    cmd: docker compose -f docker-compose.yaml up -d
+  args:
+    chdir: "/home/{{ ansible_user }}/step-ca"
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: yes

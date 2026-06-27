@@ -1,0 +1,10 @@
+services:
+  step-ca:
+    image: smallstep/step-ca:latest
+    container_name: step-ca
+    restart: unless-stopped
+    volumes:
+      - ./step:/home/step
+      - ./secrets:/home/step/secrets
+    ports:
+      - "9000:9000"   # HTTPS API / ACME / provisioning

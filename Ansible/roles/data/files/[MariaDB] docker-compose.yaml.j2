@@ -8,6 +8,8 @@ services:
     restart: always
     ports:
       - 3306:3306
+    volumes:
+      - ./data:/var/lib/mysql
     environment:
       MARIADB_ROOT_PASSWORD: '{{ MARIADB_ROOT_PASSWORD }}'
 

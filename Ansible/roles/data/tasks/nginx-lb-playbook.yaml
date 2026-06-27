@@ -1,0 +1,29 @@
+- name: Ensure nginx-lb project directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/nginx-lb/"
+    state: directory
+    mode: "0755"
+
+- name: Copy nginx.conf for nginx-lb
+  ansible.builtin.template:
+    src: files/nginx.conf
+    dest: "/home/{{ ansible_user }}/nginx-lb/nginx.conf"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+  notify: Restart nginx-lb
+
+- name: Copy docker-compose.yaml for nginx-lb
+  ansible.builtin.template:
+    src: "files/[nginx-lb] docker-compose.yaml"
+    dest: "/home/{{ ansible_user }}/nginx-lb/docker-compose.yaml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+  notify: Restart nginx-lb
+
+- name: Ensure nginx-lb Docker Compose project is running
+  community.docker.docker_compose_v2:
+    project_src: "/home/{{ ansible_user }}/nginx-lb/"
+    state: present
+    pull: always
