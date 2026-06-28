@@ -27,6 +27,7 @@ resource "unifi_user" "client" {
   network_id       = data.unifi_network.lan.id
   note             = "Created by Terraform"
   local_dns_record = "${each.value.name}.${var.domain}"
+  allow_existing   = true
 }
 
 resource "xenorchestra_vm" "ubuntu_vm" {
