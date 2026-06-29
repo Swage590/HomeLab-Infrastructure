@@ -68,7 +68,8 @@ def main():
         n8n_postgres_password=fetch_item("n8n PostgreSQL password", "Home Lab", "password"),
         n8n_runner_password=fetch_item("n8n runner password", "Home Lab", "password"),
         jumpbox_git_email=fetch_item("Jumpbox-Git", "Home Lab", "email"),
-        jumpbox_git_name=fetch_item("Jumpbox-Git", "Home Lab", "username")
+        jumpbox_git_name=fetch_item("Jumpbox-Git", "Home Lab", "username"),
+        nordvpn_wg_private_key=fetch_item("NordVPN_WG", "Home Lab", "private_key")
     )
 
 if __name__ == "__main__":

@@ -1,4 +1,73 @@
 services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      # Ports for containers routing through the VPN
+      - 9696:9696       # Prowlarr
+      - "${PORT:-8191}:8191" # Flaresolverr
+      - 8080:8080       # qBittorrent WebUI
+      - 6881:6881       # qBittorrent Torrenting
+      - 6881:6881/udp   # qBittorrent Torrenting UDP
+    environment:
+      - VPN_SERVICE_PROVIDER=nordvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY={{ nordvpn_wg_private_key }}
+      - TZ=America/New_York
+    restart: unless-stopped
+
+  prowlarr:
+    container_name: prowlarr
+    image: ghcr.io/hotio/prowlarr
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+      - TZ=America/New_York
+    volumes:
+      - "{{ servarr_config_dir }}/prowlarr:/config"
+    restart: unless-stopped
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=America/New_York
+    restart: unless-stopped
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      - WEBUI_PORT=8080
+      - TORRENTING_PORT=6881
+    volumes:
+      - "{{ servarr_config_dir }}/qbittorrent:/config"
+      - "{{ servarr_media_dir }}:/data/media"
+      - /opt/certs:/certs
+    restart: unless-stopped
+
+  # --- CONTAINERS ON NORMAL NETWORK BELOW --- #
+
   radarr:
     container_name: radarr
     image: ghcr.io/hotio/radarr:latest
@@ -15,6 +84,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - "{{ servarr_config_dir }}/radarr:/config"
       - "{{ servarr_media_dir }}:/data/media"
+
   sonarr:
     container_name: sonarr
     image: ghcr.io/hotio/sonarr:latest
@@ -31,61 +101,20 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - "{{ servarr_config_dir }}/sonarr:/config"
       - "{{ servarr_media_dir }}:/data/media"
-  prowlarr:
-    container_name: prowlarr
-    image: ghcr.io/hotio/prowlarr
-    ports:
-      - "9696:9696"
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - UMASK=002
-      - TZ=America/New_York
-    volumes:
-      - "{{ servarr_config_dir }}/prowlarr:/config"
-    restart: unless-stopped
-  flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: flaresolverr
-    environment:
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - LOG_HTML=${LOG_HTML:-false}
-      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
-      - TZ=America/New_York
-    ports:
-      - "${PORT:-8191}:8191"
-    restart: unless-stopped
+
   emby:
     image: emby/embyserver
     container_name: embyserver
-    environment:
-      - UID=1000 # The UID to run emby as (default: 2)
-      - GID=1000 # The GID to run emby as (default 2)
-    volumes:
-      - {{ servarr_config_dir }}/emby:/config # DO NOT CHANGE, BREAKS IF ON SMB SHARE FOR SOME REASON
-      - "{{ servarr_media_dir }}:/mnt/share1" # Media directory
-      - /etc/letsencrypt/live/{{ emby_domain | default('emby.swages.net') }}/:/certs   # Mount certs directory
     ports:
       - 8096:8096 # HTTP port
       - 8920:8920 # HTTPS port
-    restart: unless-stopped
-  qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:latest
-    container_name: qbittorrent
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/New_York
-      - WEBUI_PORT=8080
-      - TORRENTING_PORT=6881
+      - UID=1000 
+      - GID=1000 
     volumes:
-      - "{{ servarr_config_dir }}/qbittorrent:/config"
-      - "{{ servarr_media_dir }}:/data/media"
-      - /opt/certs:/certs
-    ports:
-      - 8080:8080
-      - 6881:6881
-      - 6881:6881/udp
+      - {{ servarr_config_dir }}/emby:/config 
+      - "{{ servarr_media_dir }}:/mnt/share1" 
+      - /etc/letsencrypt/live/{{ emby_domain | default('emby.swages.net') }}/:/certs
     restart: unless-stopped
 
   cleanuparr:
