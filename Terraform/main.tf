@@ -84,6 +84,7 @@ resource "onepassword_item" "_1pass_vm_entry" {
   lifecycle {
     ignore_changes = [
       password,
+      password_recipe,
     ]
   }
 

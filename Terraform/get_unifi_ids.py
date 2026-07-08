@@ -5,19 +5,32 @@ import os
 import requests
 import urllib3
 import time
+import ssl
+from urllib.parse import urlparse
 
-# Suppress insecure HTTPS request warnings for self-signed UniFi certs
+try:
+    import websocket
+except ImportError:
+    print("\n[ERROR] The 'websocket-client' library is missing.")
+    print("Xen Orchestra requires a WebSocket connection for its API.")
+    print("Run this command and try again:\n  pip install websocket-client\n")
+    exit(1)
+
+# Suppress insecure HTTPS request warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 TFVARS_FILE = "virtual-machines.auto.tfvars"
-OP_UNIFI_ITEM_NAME = "Terraform Unifi"
-OP_UNIFI_VAULT_NAME = "Home Lab"
+OP_VAULT_NAME = "Home Lab"
 OP_ANSIBLE_VAULT_ID = "lqttkuu6qlvnzrcxpemr6w376i" # From your Terraform code
 
-def get_op_credentials():
-    print(f"Fetching UniFi credentials from 1Password ('{OP_UNIFI_ITEM_NAME}')...")
+# Update these to match your exact 1Password item titles!
+OP_UNIFI_ITEM_NAME = "Terraform Unifi"
+OP_XO_ITEM_NAME = "Xen Orchestra 5 XO-CE"
+
+def get_op_credentials(item_name):
+    print(f"Fetching credentials from 1Password ('{item_name}')...")
     try:
-        cmd = ["op", "item", "get", OP_UNIFI_ITEM_NAME, "--vault", OP_UNIFI_VAULT_NAME, "--format", "json"]
+        cmd = ["op", "item", "get", item_name, "--vault", OP_VAULT_NAME, "--format", "json"]
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         item_data = json.loads(result.stdout)
         
@@ -33,11 +46,11 @@ def get_op_credentials():
             url = item_data["urls"][0].get("href").rstrip('/')
             
         if not all([username, password, url]):
-            raise ValueError("Could not find username, password, or URL in the UniFi 1Password item.")
+            raise ValueError(f"Could not find username, password, or URL in 1Password item: {item_name}")
             
         return username, password, url
     except subprocess.CalledProcessError as e:
-        print(f"Error fetching UniFi creds from 1Password: {e.stderr}")
+        print(f"Error fetching '{item_name}' from 1Password: {e.stderr}")
         exit(1)
 
 def parse_tfvars():
@@ -70,7 +83,6 @@ def get_terraform_state():
         return set()
 
 def run_terraform_import(resource_address, import_id):
-    """Helper function to execute terraform import with rate limit protection."""
     print(f"[IMPORTING] {resource_address} with ID {import_id}...")
     cmd = ["terraform", "import", resource_address, import_id]
     
@@ -79,6 +91,7 @@ def run_terraform_import(resource_address, import_id):
         try:
             subprocess.run(cmd, capture_output=True, text=True, check=True)
             print("  -> Success!")
+            time.sleep(5) 
             return True
         except subprocess.CalledProcessError as e:
             stderr = e.stderr or ""
@@ -102,7 +115,7 @@ def execute_unifi_imports(username, password, base_url, vms, existing_state):
     
     if not auth_resp.ok:
         print(f"Failed to authenticate: {auth_resp.status_code} - {auth_resp.text}")
-        exit(1)
+        return
         
     print("Fetching client data from UniFi API...")
     users_url = f"{base_url}/proxy/network/api/s/default/stat/alluser"
@@ -110,7 +123,7 @@ def execute_unifi_imports(username, password, base_url, vms, existing_state):
     
     if not users_resp.ok:
         print(f"Failed to fetch users: {users_resp.status_code} - {users_resp.text}")
-        exit(1)
+        return
         
     client_data = users_resp.json().get('data', [])
     mac_to_id = {client.get('mac'): client.get('_id') for client in client_data if 'mac' in client}
@@ -127,10 +140,9 @@ def execute_unifi_imports(username, password, base_url, vms, existing_state):
         if unifi_id:
             run_terraform_import(resource_address, unifi_id)
         else:
-            print(f"[WARNING] Could not find UniFi ID for {vm_name} (MAC: {mac}) in the UniFi controller.")
+            print(f"[WARNING] Could not find UniFi ID for {vm_name} (MAC: {mac}).")
 
 def get_op_item_id(item_name, vault_id):
-    """Fetches the 1Password item ID by name and vault ID."""
     try:
         cmd = ["op", "item", "get", item_name, "--vault", vault_id, "--format", "json"]
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -148,23 +160,96 @@ def execute_1password_imports(vms, existing_state):
             print(f"[SKIP] {resource_address} is already in the Terraform state.")
             continue
             
-        # The 1Password item title matches the VM name
         item_id = get_op_item_id(vm_name, OP_ANSIBLE_VAULT_ID)
         
         if item_id:
-            # Terraform 1Password provider requires vaults/<vault_id>/items/<item_id>
             import_id = f"vaults/{OP_ANSIBLE_VAULT_ID}/items/{item_id}"
             run_terraform_import(resource_address, import_id)
         else:
             print(f"[WARNING] Could not find 1Password item named '{vm_name}' in vault {OP_ANSIBLE_VAULT_ID}.")
+
+def execute_xo_imports(username, password, base_url, vms, existing_state):
+    print(f"\nAuthenticating to Xen Orchestra via WebSocket at {base_url}...")
+    
+    # Translate HTTP/HTTPS to WS/WSS
+    parsed_url = urlparse(base_url)
+    ws_scheme = "wss" if parsed_url.scheme == "https" else "ws"
+    ws_url = f"{ws_scheme}://{parsed_url.netloc}/api/"
+    
+    print(f"Using WebSocket endpoint: {ws_url}")
+    
+    try:
+        # Ignore SSL verification for self-signed homelab certs
+        ws = websocket.create_connection(ws_url, sslopt={"cert_reqs": ssl.CERT_NONE})
+    except Exception as e:
+        print(f"ERROR: Failed to connect to WebSocket: {e}")
+        return
+
+    # 1. Authenticate via JSON-RPC
+    auth_payload = {
+        "jsonrpc": "2.0",
+        "method": "session.signIn",
+        "params": {"email": username, "password": password},
+        "id": 1
+    }
+    ws.send(json.dumps(auth_payload))
+    auth_resp = json.loads(ws.recv())
+    
+    if 'error' in auth_resp:
+        print(f"Failed to authenticate to XO: {auth_resp['error']}")
+        ws.close()
+        return
+
+    # 2. Get all VMs via JSON-RPC
+    print("Fetching VM data from Xen Orchestra WebSocket API...")
+    vms_payload = {
+        "jsonrpc": "2.0",
+        "method": "xo.getAllObjects",
+        "params": {"filter": {"type": "VM"}},
+        "id": 2
+    }
+    ws.send(json.dumps(vms_payload))
+    vms_resp = json.loads(ws.recv())
+    ws.close()
+
+    if 'error' in vms_resp:
+         print(f"XO API Error: {vms_resp['error']}")
+         return
+
+    xo_objects = vms_resp.get('result', {})
+    
+    name_to_uuid = {}
+    for obj_id, obj_data in xo_objects.items():
+        if obj_data.get('type') == 'VM':
+            name_to_uuid[obj_data.get('name_label')] = obj_id
+
+    print("\n--- Starting Xen Orchestra Terraform Imports ---\n")
+    for vm_name in vms.keys():
+        resource_address = f'xenorchestra_vm.ubuntu_vm["{vm_name}"]'
+        
+        if resource_address in existing_state:
+            print(f"[SKIP] {resource_address} is already in the Terraform state.")
+            continue
+            
+        vm_uuid = name_to_uuid.get(vm_name)
+        if vm_uuid:
+            run_terraform_import(resource_address, vm_uuid)
+        else:
+            print(f"[WARNING] Could not find Xen Orchestra VM named '{vm_name}'.")
 
 if __name__ == "__main__":
     vms = parse_tfvars()
     existing_state = get_terraform_state()
     
     # 1. Handle UniFi Imports
-    unifi_user, unifi_pass, unifi_url = get_op_credentials()
+    unifi_user, unifi_pass, unifi_url = get_op_credentials(OP_UNIFI_ITEM_NAME)
     execute_unifi_imports(unifi_user, unifi_pass, unifi_url, vms, existing_state)
     
-    # 2. Handle 1Password Imports
+    # 2. Handle Xen Orchestra Imports
+    xo_user, xo_pass, xo_url = get_op_credentials(OP_XO_ITEM_NAME)
+    execute_xo_imports(xo_user, xo_pass, xo_url, vms, existing_state)
+
+    # 3. Handle 1Password Imports
     execute_1password_imports(vms, existing_state)
+    
+    print("\nAll import routines completed.")
