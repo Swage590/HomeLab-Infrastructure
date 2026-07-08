@@ -1,0 +1,8 @@
+- name: Configure systemd to forcefully kill stubborn processes on shutdown
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: "^#?DefaultTimeoutStopSec="
+    line: "DefaultTimeoutStopSec=30s"
+    state: present
+    backup: yes
+  notify: Reload systemd daemon

@@ -1,2 +1,4 @@
 - name: Install and Deploy k3s for the WORKER
   include_tasks: k3s-worker-node-playbook.yaml
+- name: Configure shutdown timeout for k3s workers
+  include_tasks: shutdown-timeout.yaml
