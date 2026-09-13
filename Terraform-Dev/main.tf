@@ -1,17 +1,54 @@
 variable "vms" {
   type = map(object({
-    name   = string
-    cpu    = number
-    memory = number
-    mac    = string
-    ip     = string
+    name      = string
+    node_name = optional(string)
+    node      = optional(string)
+    cpu       = number
+    memory    = number
+    mac       = string
+    ip        = string
   }))
+}
+
+variable "cloud_image_url" {
+  description = "URL of the cloud image to download and use for VMs"
+  type        = string
+  default     = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+}
+
+variable "cloud_image_file_name" {
+  description = "The file name for the downloaded cloud image in the datastore"
+  type        = string
+  default     = "noble-server-cloudimg-amd64.img"
+}
+
+variable "cloud_image_datastore_id" {
+  description = "The datastore where cloud images will be stored (must support ISO/image content type)"
+  type        = string
+  default     = "local"
 }
 
 variable "domain" {
   description = "TLD of your env"
   type        = string
-  default     = "Dev-Swage"
+  default     = "Swage"
+}
+
+locals {
+  unique_nodes = toset([for vm in var.vms : coalesce(vm.node_name, vm.node, "knight")])
+}
+
+resource "proxmox_virtual_environment_download_file" "ubuntu_cloud_image" {
+  for_each = local.unique_nodes
+
+  content_type        = "iso"
+  datastore_id        = var.cloud_image_datastore_id
+  node_name           = each.key
+  url                 = var.cloud_image_url
+  file_name           = var.cloud_image_file_name
+  overwrite           = false
+  overwrite_unmanaged = true
+  upload_timeout      = 1800
 }
 
 data "unifi_network" "lan" {
@@ -25,7 +62,7 @@ resource "unifi_user" "client" {
   name             = each.value.name
   fixed_ip         = each.value.ip
   network_id       = data.unifi_network.lan.id
-  note             = "[DEV] Created by Terraform"
+  note             = "[Proxmox] Created by Terraform"
   local_dns_record = "${each.value.name}.${var.domain}"
 }
 
@@ -33,26 +70,35 @@ resource "proxmox_virtual_environment_file" "user_data" {
   for_each     = var.vms
   content_type = "snippets"
   datastore_id = "local"
-  node_name    = "proxmox"
+  node_name    = coalesce(each.value.node_name, each.value.node, "knight")
 
   source_raw {
     data = templatefile("${path.module}/user-data.yml.tftpl", {
-      hostname        = each.value.name
-      username        = "swage"
-      password        = onepassword_item._1pass_vm_entry[each.key].password
-      fqdn            = "${each.value.name}.${var.domain}"
+      hostname       = each.value.name
+      username       = "swage"
+      password       = onepassword_item._1pass_vm_entry[each.key].password
+      fqdn           = "${each.value.name}.${var.domain}"
+      ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHNVigjWD/3m7VN4DxPG8nadvsq6eBb/NBNH0iomRVih"
     })
     file_name = "user-data-${each.key}.yml"
   }
 }
 
 resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
-  for_each    = var.vms
+  for_each = var.vms
 
   name        = each.value.name
-  description = "[DEV] Created by Terraform"
-  node_name   = "proxmox"
-  
+  description = "[Proxmox] Created by Terraform"
+  node_name   = coalesce(each.value.node_name, each.value.node, "knight")
+  bios        = "ovmf"
+
+  agent {
+    enabled = true
+    timeout = "10s"
+  }
+
+  started = true
+
   cpu {
     cores = each.value.cpu
   }
@@ -61,20 +107,33 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     dedicated = each.value.memory * 1024 # Convert GB to MB
   }
 
-  clone {
-    vm_id = 100
+  efi_disk {
+    datastore_id = "local-lvm"
+    file_format  = "raw"
+    type         = "4m"
   }
 
   tags = [
-      "ubuntu",
-      "terraform-managed",
+    "ubuntu",
+    "terraform-managed",
   ]
 
   disk {
     datastore_id = "local-lvm"
+    file_id      = proxmox_virtual_environment_download_file.ubuntu_cloud_image[coalesce(each.value.node_name, each.value.node, "knight")].id
     interface    = "scsi0"
     size         = 100
   }
+
+  boot_order = ["scsi0"]
+
+  scsi_hardware = "virtio-scsi-pci"
+
+  operating_system {
+    type = "l26"
+  }
+
+  serial_device {}
 
   network_device {
     bridge      = "vmbr0"
@@ -82,6 +141,8 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   }
 
   initialization {
+    datastore_id      = "local-lvm"
+    interface         = "scsi1"
     user_data_file_id = proxmox_virtual_environment_file.user_data[each.key].id
     ip_config {
       ipv4 {
@@ -92,26 +153,26 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
 }
 
 data "onepassword_item" "vm_temp_creds" {
-  vault = "Home Lab"         # name or UUID of the vault
-  title = "Packer/Ansible Debian Password"   # title of the item in 1Password
+  vault = "Home Lab"                       # name or UUID of the vault
+  title = "Packer/Ansible Debian Password" # title of the item in 1Password
 }
 
 resource "onepassword_item" "_1pass_vm_entry" {
   for_each = var.vms
 
-  vault    = "lqttkuu6qlvnzrcxpemr6w376i" # Ansible Vault
+  vault = "lqttkuu6qlvnzrcxpemr6w376i" # Ansible Vault
 
   category = "login"
-    
+
   lifecycle {
     ignore_changes = [
       password,
     ]
   }
 
-  title    = each.value.name
-  note_value = "[DEV] Created by Terraform"
-  url = "${each.value.name}.${var.domain}"
+  title      = each.value.name
+  note_value = "[Proxmox] Created by Terraform"
+  url        = "${each.value.name}.${var.domain}"
 
   username = "swage"
   password_recipe {
