@@ -4,8 +4,6 @@
   roles:
     - role: base
       become: true
-    - role: sharedrive
-      become: true
     - role: certificates
       become: true
     - role: auto_reboot
@@ -16,19 +14,12 @@
     - role: proxmox
       become: true
 
-- hosts: xcp-ng
-  roles:
-    - role: xcp-ng
-      become: true
-
-- hosts: xcp-ng
-  roles:
-    - role: xcp-ng
-      become: true
 
 - hosts: general
   roles:
     - role: docker
+      become: true
+    - role: sharedrive
       become: true
 
 # Dependant Configurations

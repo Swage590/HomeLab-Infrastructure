@@ -13,13 +13,13 @@ variable "vms" {
 variable "cloud_image_url" {
   description = "URL of the cloud image to download and use for VMs"
   type        = string
-  default     = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+  default     = "https://cloud-images.ubuntu.com/resolute/current/resolute-server-cloudimg-amd64.img"
 }
 
 variable "cloud_image_file_name" {
   description = "The file name for the downloaded cloud image in the datastore"
   type        = string
-  default     = "noble-server-cloudimg-amd64.img"
+  default     = "resolute-server-cloudimg-amd64.img"
 }
 
 variable "cloud_image_datastore_id" {
