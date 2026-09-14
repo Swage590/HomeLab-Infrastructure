@@ -4,11 +4,16 @@ create_hostname_file: true
 fqdn: ${fqdn}
 prefer_fqdn_over_hostname: true
 
-# Set the password for the default user
+# Set the user and configure passwordless SSH & sudo
 users:
   - name: ${username}
     plain_text_passwd: ${password}
     lock_passwd: false
+    groups: [adm, sudo]
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - ${ssh_public_key}
 
 package_update: true
 package_upgrade: true
@@ -21,6 +26,7 @@ packages:
   - vim
   - gpg
   - ca-certificates
+  - qemu-guest-agent
 
 write_files:
   - path: /etc/ssh/sshd_config.d/10-step-host-cert.conf
@@ -64,6 +70,10 @@ write_files:
 
 runcmd:
   - bash /root/setup-step.sh
+  # Set vim as the default editor
+  - update-alternatives --set editor /usr/bin/vim.basic
+  - echo 'EDITOR=vim' >> /etc/environment
+  - echo 'VISUAL=vim' >> /etc/environment
 
 power_state:
   mode: reboot
