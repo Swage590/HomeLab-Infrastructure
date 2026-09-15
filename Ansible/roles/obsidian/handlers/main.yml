@@ -2,4 +2,4 @@
   ansible.builtin.command:
     cmd: docker compose -f docker-compose.yaml up -d
   args:
-    chdir: "/home/{{ ansible_user }}/obsidian"
+    chdir: "/home/{{ ansible_facts['user_id'] }}/obsidian"

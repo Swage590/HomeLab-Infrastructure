@@ -4,8 +4,8 @@
   roles:
     - role: base
       become: true
-    - role: certificates
-      become: true
+    # - role: certificates
+    #   become: true
     - role: auto_reboot
       become: true
 
@@ -15,7 +15,7 @@
       become: true
 
 
-- hosts: general
+- hosts: general,general-vm
   roles:
     - role: docker
       become: true
@@ -43,7 +43,7 @@
     # - role: obsidian
     - role: n8n
 
-- hosts: data
+- hosts: tavern
   roles:
     - role: data
       become: true

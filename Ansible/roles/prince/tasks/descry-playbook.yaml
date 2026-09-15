@@ -1,8 +1,8 @@
 - name: Launch Descry Installer/Update Script
-  ansible.builtin.script: files/descry.sh
+  ansible.builtin.script: ./descry.sh
   args:
-    chdir: "/home/{{ ansible_user }}/"
-    creates: "/home/{{ ansible_user }}/descry.tech"
+    chdir: "/home/{{ ansible_facts['user_id'] }}/"
+    creates: "/home/{{ ansible_facts['user_id'] }}/descry.tech"
 
 - name: Run my local container with Watchtower disabled
   community.docker.docker_container:

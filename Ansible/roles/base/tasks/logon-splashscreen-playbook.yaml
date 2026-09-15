@@ -29,10 +29,10 @@
 
 - name: Ensure .hushlogin exists for the login user
   ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/.hushlogin"
+    path: "/home/{{ ansible_facts['user_id'] }}/.hushlogin"
     state: touch
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
     mode: "0644"
     modification_time: preserve
     access_time: preserve

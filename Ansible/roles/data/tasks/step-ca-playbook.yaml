@@ -1,12 +1,12 @@
 - name: Ensure step-ca project directory exists
   ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/step-ca"
+    path: "/home/{{ ansible_facts['user_id'] }}/step-ca"
     state: directory
     mode: "0755"
 
 - name: Check if step-ca/step directory exists and has files (fresh install check)
   ansible.builtin.find:
-    paths: "/home/{{ ansible_user }}/step-ca/step"
+    paths: "/home/{{ ansible_facts['user_id'] }}/step-ca/step"
     hidden: yes
   register: step_ca_data_files
 
@@ -15,7 +15,7 @@
     latest_backup=$(ls -t /mnt/main/Backups/step-ca/step-ca-backup-*.tar.gz 2>/dev/null | head -n 1)
     if [ -n "$latest_backup" ]; then
       echo "Restoring step-ca from $latest_backup..."
-      tar -xzf "$latest_backup" -C "/home/{{ ansible_user }}/step-ca"
+      tar -xzf "$latest_backup" -C "/home/{{ ansible_facts['user_id'] }}/step-ca"
     else
       echo "No backup found to restore."
     fi
@@ -29,15 +29,15 @@
 - name: Copy docker-compose.yaml for step-ca
   ansible.builtin.template:
     src: "files/[step-ca] docker-compose.yaml.j2"
-    dest: "/home/{{ ansible_user }}/step-ca/docker-compose.yaml"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    dest: "/home/{{ ansible_facts['user_id'] }}/step-ca/docker-compose.yaml"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
     mode: "0644"
   notify: Restart step-ca
 
 - name: Ensure step-ca Docker Compose project is running
   community.docker.docker_compose_v2:
-    project_src: "/home/{{ ansible_user }}/step-ca/"
+    project_src: "/home/{{ ansible_facts['user_id'] }}/step-ca/"
     state: present
     pull: always
 

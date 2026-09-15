@@ -10,7 +10,7 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
     volumes:
-      - /home/{{ ansible_user }}/obsidian/config:/config
+      - /home/{{ ansible_facts['user_id'] }}/obsidian/config:/config
     ports:
       - 3000:3000
       - 3001:3001

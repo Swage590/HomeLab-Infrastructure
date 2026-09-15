@@ -1,27 +1,27 @@
 - name: Ensure MariaDB project directory exists
   ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/MariaDB/"
+    path: "/home/{{ ansible_facts['user_id'] }}/MariaDB/"
     state: directory
     mode: "0755"
 
 - name: Ensure MariaDB data directory exists
   ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/MariaDB/data"
+    path: "/home/{{ ansible_facts['user_id'] }}/MariaDB/data"
     state: directory
     mode: "0755"
 
 - name: Copy docker-compose.yaml for MariaDB
   ansible.builtin.template:
     src: "files/[MariaDB] docker-compose.yaml.j2"
-    dest: "/home/{{ ansible_user }}/MariaDB/docker-compose.yaml"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    dest: "/home/{{ ansible_facts['user_id'] }}/MariaDB/docker-compose.yaml"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
     mode: "0644"
   notify: Restart MariaDB
 
 - name: Ensure MariaDB Docker Compose project is running
   community.docker.docker_compose_v2:
-    project_src: "/home/{{ ansible_user }}/MariaDB/"
+    project_src: "/home/{{ ansible_facts['user_id'] }}/MariaDB/"
     state: present
     pull: always
 

@@ -11,8 +11,8 @@ ExecStartPre=/bin/mkdir -p /mnt/main/Backups/step-ca
 ExecStartPre=/usr/bin/docker stop step-ca
 
 # Create a compressed tar archive of the 'step' and 'secrets' directories
-# Note: Using {{ ansible_user }} home directory
-ExecStart=/bin/bash -c "tar -czf /mnt/main/Backups/step-ca/step-ca-backup-$(date +%%Y%%m%%d-%%H%%M%%S).tar.gz -C /home/{{ ansible_user }}/step-ca step secrets"
+# Note: Using {{ ansible_facts['user_id'] }} home directory
+ExecStart=/bin/bash -c "tar -czf /mnt/main/Backups/step-ca/step-ca-backup-$(date +%%Y%%m%%d-%%H%%M%%S).tar.gz -C /home/{{ ansible_facts['user_id'] }}/step-ca step secrets"
 
 # Start the container back up
 ExecStartPost=/usr/bin/docker start step-ca

@@ -1,9 +1,6 @@
 - name: Make sure that the nginx-lb is up and running
   include_tasks: nginx-lb-playbook.yaml
 
-- name: Make sure that couchdb is up and running
-  include_tasks: couchdb-playbook.yaml
-
 - name: Make sure that the database is up and running
   include_tasks: mariadb-playbook.yaml
 

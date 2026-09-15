@@ -1,51 +1,51 @@
 - name: Ensure obsidian project directory exists
   ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/obsidian/"
+    path: "/home/{{ ansible_facts['user_id'] }}/obsidian/"
     state: directory
     mode: "0755"
 
 - name: Ensure .obsidian config directory exists
   ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/obsidian/config/Obsidian Vault/.obsidian"
+    path: "/home/{{ ansible_facts['user_id'] }}/obsidian/config/Obsidian Vault/.obsidian"
     state: directory
     mode: "0755"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
 
 - name: Create community-plugins.json file
   ansible.builtin.copy:
-    dest: "/home/{{ ansible_user }}/obsidian/config/Obsidian Vault/.obsidian/community-plugins.json"
+    dest: "/home/{{ ansible_facts['user_id'] }}/obsidian/config/Obsidian Vault/.obsidian/community-plugins.json"
     content: |
       [
         "obsidian-livesync"
       ]
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
     mode: "0644"
 
 - name: Create app.json to bypass trust prompt (Restricted Mode off)
   ansible.builtin.copy:
-    dest: "/home/{{ ansible_user }}/obsidian/config/Obsidian Vault/.obsidian/app.json"
+    dest: "/home/{{ ansible_facts['user_id'] }}/obsidian/config/Obsidian Vault/.obsidian/app.json"
     content: |
       {
         "unsafeMode": true,
         "trust": true
       }
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
     mode: "0644"
 
 - name: Ensure global obsidian config directory exists
   ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/obsidian/config/.config/obsidian"
+    path: "/home/{{ ansible_facts['user_id'] }}/obsidian/config/.config/obsidian"
     state: directory
     mode: "0755"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
 
 - name: Create global obsidian.json to bypass quickstart
   ansible.builtin.copy:
-    dest: "/home/{{ ansible_user }}/obsidian/config/.config/obsidian/obsidian.json"
+    dest: "/home/{{ ansible_facts['user_id'] }}/obsidian/config/.config/obsidian/obsidian.json"
     content: |
       {
         "vaults": {
@@ -56,26 +56,26 @@
           }
         }
       }
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
     mode: "0644"
 
 - name: Copy docker-compose.yaml for obsidian
   ansible.builtin.template:
     src: "files/[obsidian] docker-compose.yaml.j2"
-    dest: "/home/{{ ansible_user }}/obsidian/docker-compose.yaml"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    dest: "/home/{{ ansible_facts['user_id'] }}/obsidian/docker-compose.yaml"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
     mode: "0644"
   notify: Restart obsidian
 
 - name: Ensure obsidian-livesync plugin directory exists
   ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/obsidian/config/Obsidian Vault/.obsidian/plugins/obsidian-livesync"
+    path: "/home/{{ ansible_facts['user_id'] }}/obsidian/config/Obsidian Vault/.obsidian/plugins/obsidian-livesync"
     state: directory
     mode: "0755"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
 
 - name: Get latest release of obsidian-livesync
   ansible.builtin.uri:
@@ -88,38 +88,38 @@
 - name: Download obsidian-livesync main.js
   ansible.builtin.get_url:
     url: "https://github.com/vrtmrz/obsidian-livesync/releases/download/{{ livesync_release.json.tag_name }}/main.js"
-    dest: "/home/{{ ansible_user }}/obsidian/config/Obsidian Vault/.obsidian/plugins/obsidian-livesync/main.js"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    dest: "/home/{{ ansible_facts['user_id'] }}/obsidian/config/Obsidian Vault/.obsidian/plugins/obsidian-livesync/main.js"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
     mode: "0644"
 
 - name: Download obsidian-livesync manifest.json
   ansible.builtin.get_url:
     url: "https://github.com/vrtmrz/obsidian-livesync/releases/download/{{ livesync_release.json.tag_name }}/manifest.json"
-    dest: "/home/{{ ansible_user }}/obsidian/config/Obsidian Vault/.obsidian/plugins/obsidian-livesync/manifest.json"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    dest: "/home/{{ ansible_facts['user_id'] }}/obsidian/config/Obsidian Vault/.obsidian/plugins/obsidian-livesync/manifest.json"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
     mode: "0644"
 
 - name: Download obsidian-livesync styles.css
   ansible.builtin.get_url:
     url: "https://github.com/vrtmrz/obsidian-livesync/releases/download/{{ livesync_release.json.tag_name }}/styles.css"
-    dest: "/home/{{ ansible_user }}/obsidian/config/Obsidian Vault/.obsidian/plugins/obsidian-livesync/styles.css"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    dest: "/home/{{ ansible_facts['user_id'] }}/obsidian/config/Obsidian Vault/.obsidian/plugins/obsidian-livesync/styles.css"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
     mode: "0644"
   ignore_errors: true
 
 - name: Copy vaulted obsidian-livesync data.json
   ansible.builtin.copy:
     src: "files/obsidian-livesync-data.json"
-    dest: "/home/{{ ansible_user }}/obsidian/config/Obsidian Vault/.obsidian/plugins/obsidian-livesync/data.json"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    dest: "/home/{{ ansible_facts['user_id'] }}/obsidian/config/Obsidian Vault/.obsidian/plugins/obsidian-livesync/data.json"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
     mode: "0644"
 
 - name: Ensure obsidian Docker Compose project is running
   community.docker.docker_compose_v2:
-    project_src: "/home/{{ ansible_user }}/obsidian/"
+    project_src: "/home/{{ ansible_facts['user_id'] }}/obsidian/"
     state: present
     pull: always

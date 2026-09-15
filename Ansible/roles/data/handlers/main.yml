@@ -2,25 +2,25 @@
   ansible.builtin.command:
     cmd: docker compose -f docker-compose.yaml up -d
   args:
-    chdir: "/home/{{ ansible_user }}/nginx-lb"
+    chdir: "/home/{{ ansible_facts['user_id'] }}/nginx-lb"
 
 - name: Restart MariaDB
   ansible.builtin.command:
     cmd: docker compose -f docker-compose.yaml up -d
   args:
-    chdir: "/home/{{ ansible_user }}/MariaDB"
+    chdir: "/home/{{ ansible_facts['user_id'] }}/MariaDB"
 
 - name: Restart couchDB
   ansible.builtin.command:
     cmd: docker compose -f docker-compose.yaml up -d
   args:
-    chdir: "/home/{{ ansible_user }}/couchdb"
+    chdir: "/home/{{ ansible_facts['user_id'] }}/couchdb"
 
 - name: Restart step-ca
   ansible.builtin.command:
     cmd: docker compose -f docker-compose.yaml up -d
   args:
-    chdir: "/home/{{ ansible_user }}/step-ca"
+    chdir: "/home/{{ ansible_facts['user_id'] }}/step-ca"
 
 - name: Reload systemd
   ansible.builtin.systemd:

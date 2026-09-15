@@ -1,19 +1,19 @@
 - name: Ensure servarr directory exists
   ansible.builtin.file:
-    path: /home/{{ ansible_user }}/servarr/
+    path: /home/{{ ansible_facts['user_id'] }}/servarr/
     state: directory
     mode: "774"
 
 - name: Copy servarr docker-compose.yaml to compose dir
   ansible.builtin.template:
     src: files/[servarr] docker-compose.yaml.j2
-    dest: "/home/{{ ansible_user }}/servarr/docker-compose.yaml"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    dest: "/home/{{ ansible_facts['user_id'] }}/servarr/docker-compose.yaml"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
     mode: "664"
 
 - name: Make sure servarr docker-compose project is running
   community.docker.docker_compose_v2:
-    project_src: /home/{{ ansible_user }}/servarr/
+    project_src: /home/{{ ansible_facts['user_id'] }}/servarr/
     state: present
     pull: always

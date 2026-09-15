@@ -49,8 +49,8 @@ services:
       - N8N_RUNNERS_AUTH_TOKEN={{ n8n_runner_password }}
       - N8N_NATIVE_PYTHON_RUNNER=true
     volumes:
-      - /home/{{ ansible_user }}/n8n/n8n_data:/home/node/.n8n
-      - /home/{{ ansible_user }}/n8n/local-files:/files
+      - /home/{{ ansible_facts['user_id'] }}/n8n/n8n_data:/home/node/.n8n
+      - /home/{{ ansible_facts['user_id'] }}/n8n/local-files:/files
     depends_on:
       postgres:
         condition: service_healthy
