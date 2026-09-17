@@ -1,4 +1,7 @@
 terraform {
+  backend "local" {
+    path = "/mnt/sharedrive/terraform/terraform.tfstate"
+  }
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"
