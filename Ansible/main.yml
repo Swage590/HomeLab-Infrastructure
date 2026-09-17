@@ -4,8 +4,8 @@
   roles:
     - role: base
       become: true
-    # - role: certificates
-    #   become: true
+    - role: certificates
+      become: true
     - role: auto_reboot
       become: true
 
@@ -15,7 +15,7 @@
       become: true
 
 
-- hosts: general,general-vm
+- hosts: general, client-machines
   roles:
     - role: docker
       become: true

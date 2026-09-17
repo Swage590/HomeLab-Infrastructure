@@ -1,2 +1,4 @@
-sharedrive_server: "nas.swage"
-sharedrive_share: "main"
+cephfs_endpoints: "[IP_ADDRESS]"
+cephfs_name: "cephfs"
+cephfs_sharedrive_name: "main"
+cephfs_sharedrive_client_key: "[ENCRYPTION_KEY]"

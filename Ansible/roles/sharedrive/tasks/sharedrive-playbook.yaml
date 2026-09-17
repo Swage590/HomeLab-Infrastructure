@@ -1,44 +1,64 @@
-- name: Ensure CIFS and NFS utilities are installed
+- name: Ensure Ceph common utilities are installed
   ansible.builtin.package:
     name:
-      - cifs-utils
-      - nfs-common
+      - ceph-common
     state: present
 
-- name: Ensure cifs-utils is installed
-  ansible.builtin.package:
-    name: nfs-common
-    state: present
-
-- name: Copy over smb credentials
-  no_log: true
-  ansible.builtin.copy:
-    src: files/.smbcredentials
-    dest: /root/.smbcredentials
+- name: Create Ceph configuration directory
+  ansible.builtin.file:
+    path: /etc/ceph
+    state: directory
     owner: root
     group: root
-    mode: '0700'
+    mode: '0755'
 
-- name: Create systemd mount unit for the main share
+- name: Create Ceph configuration file
+  ansible.builtin.copy:
+    dest: /etc/ceph/ceph.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      [global]
+      mon_host = {{ cephfs_endpoints }}
+
+- name: Write Ceph secret file for sharedrive client
+  no_log: true
+  ansible.builtin.copy:
+    dest: "/etc/ceph/ceph.client.{{ cephfs_sharedrive_name }}.secret"
+    owner: root
+    group: root
+    mode: '0600'
+    content: "{{ cephfs_sharedrive_client_key }}\n"
+
+- name: Ensure mount point directory exists
+  ansible.builtin.file:
+    path: /mnt/{{ cephfs_sharedrive_name }}
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create systemd mount unit for CephFS
   become: true
   notify:
     - Reload systemd and start mount
   ansible.builtin.copy:
-    dest: /etc/systemd/system/mnt-main.mount
+    dest: /etc/systemd/system/mnt-{{ cephfs_sharedrive_name }}.mount
     owner: root
     group: root
     mode: '0644'
     content: |
       [Unit]
-      Description=Mount main share from NAS
+      Description=Mount CephFS {{ cephfs_sharedrive_name }} share
       After=network-online.target
       Wants=network-online.target
 
       [Mount]
-      What=//{{ sharedrive_server }}/{{ sharedrive_share }}
-      Where=/mnt/main
-      Type=cifs
-      Options=credentials=/root/.smbcredentials,iocharset=utf8,file_mode=0777,dir_mode=0777,_netdev
+      What={{ cephfs_sharedrive_name }}@.{{ cephfs_name }}=/{{ cephfs_sharedrive_name }}
+      Where=/mnt/{{ cephfs_sharedrive_name }}
+      Type=ceph
+      Options=secretfile=/etc/ceph/ceph.client.{{ cephfs_sharedrive_name }}.secret,_netdev
       TimeoutSec=30
 
       [Install]

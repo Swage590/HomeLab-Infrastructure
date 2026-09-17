@@ -12,7 +12,7 @@
 
 - name: Restore step-ca from most recent backup (ONLY on Fresh Install)
   ansible.builtin.shell: |
-    latest_backup=$(ls -t /mnt/main/Backups/step-ca/step-ca-backup-*.tar.gz 2>/dev/null | head -n 1)
+    latest_backup=$(ls -t /mnt/sharedrive/Backups/step-ca/step-ca-backup-*.tar.gz 2>/dev/null | head -n 1)
     if [ -n "$latest_backup" ]; then
       echo "Restoring step-ca from $latest_backup..."
       tar -xzf "$latest_backup" -C "/home/{{ ansible_facts['user_id'] }}/step-ca"

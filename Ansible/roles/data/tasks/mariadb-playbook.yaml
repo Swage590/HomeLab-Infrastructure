@@ -36,7 +36,7 @@
   ansible.builtin.shell:
     cmd: |
       existing_dbs=$(docker exec maria-db-host mariadb -uroot -p'{{ MARIADB_ROOT_PASSWORD }}' -s -N -e "SHOW DATABASES;")
-      cd /mnt/main/Backups/database/
+      cd /mnt/sharedrive/Backups/database/
       backed_up_dbs=$(ls mariadb_*_maria-db-host_*.sql.gz 2>/dev/null | sed -E 's/mariadb_(.*)_maria-db-host_.*/\1/' | sort -u)
       system_dbs="information_schema mysql performance_schema sys"
       missing_count=0
@@ -59,7 +59,7 @@
 - name: Restore Application Databases
   ansible.builtin.shell:
     cmd: |
-      cd /mnt/main/Backups/database/
+      cd /mnt/sharedrive/Backups/database/
       backed_up_dbs=$(ls mariadb_*_maria-db-host_*.sql.gz 2>/dev/null | sed -E 's/mariadb_(.*)_maria-db-host_.*/\1/' | sort -u)
       for db in $backed_up_dbs; do
         # Skip all system DBs in this pass so we don't break authentication mid-restore
@@ -80,7 +80,7 @@
 - name: Restore System Databases (mysql, sys)
   ansible.builtin.shell:
     cmd: |
-      cd /mnt/main/Backups/database/
+      cd /mnt/sharedrive/Backups/database/
       # We restore sys first, then mysql last to ensure we don't get locked out
       for db in sys mysql; do
         latest_backup=$(ls -t mariadb_${db}_maria-db-host_*.sql.gz 2>/dev/null | head -n 1)
