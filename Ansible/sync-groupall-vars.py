@@ -5,8 +5,7 @@ import tempfile
 import yaml
 from pathlib import Path
 
-# Set the base directory to the Ansible root
-ANSIBLE_DIR = Path("/home/swage/HomeLab-Infrastructure-1/Ansible")
+ANSIBLE_DIR = Path(__file__).resolve().parent
 
 def fetch_item(item_name, vault_name, field_name):
     try:
