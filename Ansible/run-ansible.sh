@@ -1,18 +1,17 @@
 #!/bin/bash
 # Parse arguments
 SKIP_SYNC=0
-ENVIRONMENT="dev"
 ANSIBLE_ARGS=()
 
 LIMIT_ARG=""
 ROLE_ARG=""
 
+INVENTORY="./inventory.ini"
+PLAYBOOK="main.yml"
+
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --skip-sync) SKIP_SYNC=1; shift ;;
-        --dev) ENVIRONMENT="dev"; shift ;;
-        --prod) ENVIRONMENT="prod"; shift ;;
-        --env) ENVIRONMENT="$2"; shift 2 ;;
         --limit|-l) LIMIT_ARG="$2"; ANSIBLE_ARGS+=("$1" "$2"); shift 2 ;;
         --limit=*) LIMIT_ARG="${1#*=}"; ANSIBLE_ARGS+=("$1"); shift ;;
         -l=*) LIMIT_ARG="${1#*=}"; ANSIBLE_ARGS+=("$1"); shift ;;
@@ -23,18 +22,6 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
-if [ "$ENVIRONMENT" == "dev" ]; then
-    INVENTORY="./inventory-dev.ini"
-    PLAYBOOK="main-dev.yml"
-elif [ "$ENVIRONMENT" == "prod" ]; then
-    INVENTORY="./inventory.ini"
-    PLAYBOOK="main.yml"
-else
-    echo "❌ Unknown environment: $ENVIRONMENT. Use --dev or --prod."
-    exit 1
-fi
-
-echo "🌍 Running for environment: $ENVIRONMENT"
 if [ -n "$ROLE_ARG" ]; then
     echo "🎯 Limiting execution to role/tag: $ROLE_ARG"
 fi
