@@ -179,7 +179,8 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
       node_name,
       disk[0].datastore_id,
       disk[0].file_id,
-      disk[0].size
+      disk[0].size,
+      initialization
     ]
   }
 }
