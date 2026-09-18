@@ -5,10 +5,13 @@
     state: present
   when: ansible_os_family == "Debian"
 
-- name: Ensure Ceph utilities are installed via yay (Arch Linux)
-  ansible.builtin.command: yay -S --noconfirm --needed ceph-bin
-  become: false
-  changed_when: false
+- name: Ensure Ceph utilities are installed via AUR (Arch Linux)
+  kewlfft.aur.aur:
+    use: yay
+    name:
+      - ceph-bin
+    state: present
+  become: true
   when: ansible_os_family == "Archlinux"
 
 - name: Create Ceph configuration directory
