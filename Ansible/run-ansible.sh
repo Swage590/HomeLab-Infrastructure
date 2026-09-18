@@ -5,6 +5,7 @@ ENVIRONMENT="dev"
 ANSIBLE_ARGS=()
 
 LIMIT_ARG=""
+ROLE_ARG=""
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -15,6 +16,9 @@ while [[ "$#" -gt 0 ]]; do
         --limit|-l) LIMIT_ARG="$2"; ANSIBLE_ARGS+=("$1" "$2"); shift 2 ;;
         --limit=*) LIMIT_ARG="${1#*=}"; ANSIBLE_ARGS+=("$1"); shift ;;
         -l=*) LIMIT_ARG="${1#*=}"; ANSIBLE_ARGS+=("$1"); shift ;;
+        --role|-r) ROLE_ARG="$2"; ANSIBLE_ARGS+=("--tags" "$2"); shift 2 ;;
+        --role=*) ROLE_ARG="${1#*=}"; ANSIBLE_ARGS+=("--tags" "${1#*=}"); shift ;;
+        -r=*) ROLE_ARG="${1#*=}"; ANSIBLE_ARGS+=("--tags" "${1#*=}"); shift ;;
         *) ANSIBLE_ARGS+=("$1"); shift ;;
     esac
 done
@@ -31,6 +35,9 @@ else
 fi
 
 echo "🌍 Running for environment: $ENVIRONMENT"
+if [ -n "$ROLE_ARG" ]; then
+    echo "🎯 Limiting execution to role/tag: $ROLE_ARG"
+fi
 
 # Check if the 1Password CLI is already authenticated by trying to list accounts
 # Redirecting stderr to dev/null so it stays clean if you aren't signed in

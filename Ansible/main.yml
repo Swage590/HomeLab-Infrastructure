@@ -4,23 +4,28 @@
   roles:
     - role: base
       become: true
+      tags: base
     - role: certificates
       become: true
+      tags: certificates
     - role: auto_reboot
       become: true
+      tags: auto_reboot
 
 - hosts: proxmox
   roles:
     - role: proxmox
       become: true
-
+      tags: proxmox
 
 - hosts: general, client-machines
   roles:
     - role: docker
       become: true
+      tags: docker
     - role: sharedrive
       become: true
+      tags: sharedrive
 
 # Dependant Configurations
 
@@ -28,11 +33,13 @@
   roles:
     - role: k3s_master
       become: true
+      tags: k3s_master
 
 - hosts: worker_node
   roles:
     - role: k3s_worker
       become: true
+      tags: k3s_worker
 
 # Host Specific Configurations
 
@@ -40,19 +47,25 @@
   roles:
     - role: prince
       become: true
+      tags: prince
     # - role: obsidian
+    #   tags: obsidian
     - role: n8n
+      tags: n8n
 
 - hosts: tavern
   roles:
     - role: data
       become: true
+      tags: data
 
 - hosts: overflow
   roles:
     - role: jumpbox
       become: true
+      tags: jumpbox
 
 - hosts: rtxserver
   roles:
     - role: rtxserver
+      tags: rtxserver
