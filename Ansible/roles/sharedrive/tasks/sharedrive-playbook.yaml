@@ -1,8 +1,18 @@
-- name: Ensure Ceph common utilities are installed
-  ansible.builtin.package:
+- name: Ensure Ceph common utilities are installed (Debian)
+  ansible.builtin.apt:
     name:
       - ceph-common
     state: present
+  when: ansible_os_family == "Debian"
+
+- name: Ensure Ceph utilities are installed via AUR (Arch Linux)
+  kewlfft.aur.aur:
+    use: yay
+    name:
+      - ceph-bin
+    state: present
+  become: true
+  when: ansible_os_family == "Archlinux"
 
 - name: Create Ceph configuration directory
   ansible.builtin.file:
