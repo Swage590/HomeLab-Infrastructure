@@ -7,11 +7,10 @@ prefer_fqdn_over_hostname: true
 # Set the user and configure passwordless SSH & sudo
 users:
   - name: ${username}
-    plain_text_passwd: ${password}
+    passwd: "${password_hash}"
     lock_passwd: false
     groups: [adm, sudo]
     shell: /bin/bash
-    sudo: ALL=(ALL) NOPASSWD:ALL
     ssh_authorized_keys:
       - ${ssh_public_key}
 

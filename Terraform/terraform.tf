@@ -14,5 +14,9 @@ terraform {
       source  = "ubiquiti-community/unifi"
       version = "0.41.3"
     }
+    htpasswd = {
+      source  = "loafoe/htpasswd"
+      version = "~> 1.2"
+    }
   }
 }

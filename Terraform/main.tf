@@ -98,7 +98,7 @@ resource "proxmox_virtual_environment_file" "user_data" {
     data = templatefile("${path.module}/user-data.yml.tftpl", {
       hostname       = each.value.name
       username       = "swage"
-      password       = onepassword_item._1pass_vm_entry[each.key].password
+      password_hash  = htpasswd_password.vm_password[each.key].sha512
       fqdn           = "${each.value.name}.${var.domain}"
       ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHNVigjWD/3m7VN4DxPG8nadvsq6eBb/NBNH0iomRVih"
     })
@@ -174,20 +174,16 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     }
   }
 
-  lifecycle {
+lifecycle {
     ignore_changes = [
       node_name,
       disk[0].datastore_id,
       disk[0].file_id,
       disk[0].size,
-      initialization
+      initialization[0].user_data_file_id,
+      initialization[0].ip_config,
     ]
   }
-}
-
-data "onepassword_item" "vm_temp_creds" {
-  vault = "Home Lab"                       # name or UUID of the vault
-  title = "Packer/Ansible Debian Password" # title of the item in 1Password
 }
 
 resource "onepassword_item" "_1pass_vm_entry" {
@@ -228,4 +224,17 @@ resource "onepassword_item" "_1pass_vm_entry" {
       value = each.value.ip
     }
   }
+}
+
+resource "random_password" "vm_salt" {
+  for_each = var.vms
+  length   = 16
+  special  = false
+}
+
+resource "htpasswd_password" "vm_password" {
+  for_each = var.vms
+
+  password = onepassword_item._1pass_vm_entry[each.key].password
+  salt     = random_password.vm_salt[each.key].result
 }
