@@ -175,6 +175,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   }
 
 lifecycle {
+    # Keep ignoring drift/unmount quirks during normal operations
     ignore_changes = [
       node_name,
       disk[0].datastore_id,
@@ -182,6 +183,11 @@ lifecycle {
       disk[0].size,
       initialization[0].user_data_file_id,
       initialization[0].ip_config,
+    ]
+
+    # Force VM recreation whenever this specific VM's user-data snippet changes
+    replace_triggered_by = [
+      proxmox_virtual_environment_file.user_data[each.key]
     ]
   }
 }
