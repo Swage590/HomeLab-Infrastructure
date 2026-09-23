@@ -5,6 +5,7 @@
     creates: "/home/{{ ansible_facts['user_id'] }}/descry.tech"
 
 - name: Run my local container with Watchtower disabled
+  become: true
   community.docker.docker_container:
     name: descry
     image: descry

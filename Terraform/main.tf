@@ -234,7 +234,7 @@ resource "onepassword_item" "_1pass_vm_entry" {
 
 resource "random_password" "vm_salt" {
   for_each = var.vms
-  length   = 16
+  length   = 8
   special  = false
 }
 
