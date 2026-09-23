@@ -1,0 +1,36 @@
+# Configuration manifest for Ansible Vault secrets synchronization via 1Password CLI
+
+vault_password:
+  uri: "op://Home Lab/Ansible-Vault/password"
+
+# Group variables mapping: group_name -> { ansible_var_name: "op://<vault>/<item>/<field>" }
+groups:
+  all:
+    certificates_ca_address_or_ip: "op://Home Lab/Step-CA/url"
+    certificates_fingerprint: "op://Home Lab/Step-CA/SmallStep Info/X.509 Root Fingerprint"
+    MARIADB_ROOT_PASSWORD: "op://Home Lab/MARIADB_ROOT_PASSWORD/password"
+    DISCORD_CHANNEL_ID_TOKEN: "op://Home Lab/Watchtower_Discord_Webhook_Token/password"
+    k3s_datastore_endpoint: "op://Home Lab/K3s/password"
+    k3s_token: "op://Home Lab/K3s Node Token/password"
+    k3s_tls_san: "op://Home Lab/k3s/url"
+    discord_webhook_url: "op://Home Lab/SMTP_discord_webhook_url/password"
+    COUCHDB_USER: "op://Home Lab/CouchDB/username"
+    COUCHDB_USER_PASSWORD: "op://Home Lab/CouchDB/password"
+    n8n_postgres_password: "op://Home Lab/n8n PostgreSQL password/password"
+    n8n_runner_password: "op://Home Lab/n8n runner password/password"
+    jumpbox_git_email: "op://Home Lab/Jumpbox-Git/email"
+    jumpbox_git_name: "op://Home Lab/Jumpbox-Git/username"
+    nordvpn_wg_private_key: "op://Home Lab/NordVPN_WG/wg_private_key"
+    cephfs_sharedrive_client_key: "op://Home Lab/CephFS - ShareDrive Client Key/password"
+    cephfs_sharedrive_name: "op://Home Lab/CephFS - ShareDrive Client Key/username"
+    cephfs_name: "op://Home Lab/CephFS/name"
+    cephfs_endpoints: "op://Home Lab/CephFS/endpoints"
+
+# Host variables template: applied to each host discovered in the inventory
+hosts:
+  vault: "Ansible"
+  static_vars:
+    ansible_ssh_private_key_file: "/home/swage/private_key"
+  dynamic_vars:
+    ansible_user: "username"
+    ansible_become_password: "password"

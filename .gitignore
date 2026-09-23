@@ -7,3 +7,5 @@ Ansible/.vscode/
 .ansible/.lock
 Ansible/host_vars/
 Ansible/group_vars/all/
+__pycache__/
+*.pyc

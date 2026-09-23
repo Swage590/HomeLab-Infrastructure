@@ -46,18 +46,15 @@ else
 fi
 
 if [ "$SKIP_SYNC" -eq 0 ]; then
-    echo "🔄 Running sync-groupall-vars.py..."
-    ./sync-groupall-vars.py
-
     if [ -n "$LIMIT_ARG" ]; then
-        echo "🔄 Running sync-host-vars.py with limit: $LIMIT_ARG..."
-        ./sync-host-vars.py -i "$INVENTORY" --limit "$LIMIT_ARG"
+        echo "🔄 Running sync-vars.py with limit: $LIMIT_ARG..."
+        ./sync-vars.py -i "$INVENTORY" --limit "$LIMIT_ARG"
     else
-        echo "🔄 Running sync-host-vars.py..."
-        ./sync-host-vars.py -i "$INVENTORY"
+        echo "🔄 Running sync-vars.py..."
+        ./sync-vars.py -i "$INVENTORY"
     fi
 else
-    echo "⏭️  Skipping python sync scripts (--skip-sync provided)..."
+    echo "⏭️  Skipping python sync script (--skip-sync provided)..."
 fi
 
 echo "🔑 Setting up SSH key..."
