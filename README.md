@@ -15,7 +15,6 @@ Ansible   --> https://docs.ansible.com/ansible/latest/installation_guide/intro_i
 git clone https://github.com/Swage590/HomeLab-Infrastructure
 cd HomeLab-Infrastructure
 chmod +x inject-op-token.sh
-chmod +x windows-op-wrapper.sh
 chmod +x Ansible/ansible-vault-password.sh
 cd Terraform
 terraform init
@@ -32,9 +31,10 @@ terraform apply
 # Ansible Instructions
 
 ```bash
-cd Ansible
-python3 sync-host-vars.py
-ansible-playbook main.yml --vault-password-file ansible-vault-password.sh
+chmod +x ./Ansible/*.sh
+./Ansible/install-dependencies.sh
+./Ansible/run-ansible.sh
+
 ```
 
 # Ops Design
