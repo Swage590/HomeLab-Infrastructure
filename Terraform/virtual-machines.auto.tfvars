@@ -5,4 +5,5 @@ vms = {
   Shadow-Barbarian = { name = "Shadow-Barbarian", node_name = "barbarian", cpu = 2, memory = 8, mac = "02:00:00:0a:15:04", ip = "10.59.20.224" }
   Prince           = { name = "Prince", node_name = "knight", cpu = 2, memory = 8, mac = "02:00:00:0a:15:05", ip = "10.59.20.5" }
   Tavern           = { name = "Tavern", node_name = "warrior", cpu = 2, memory = 8, mac = "02:00:00:0a:15:06", ip = "10.59.20.7" }
+  Storehouse       = { name = "Storehouse", node_name = "barbarian", cpu = 2, memory = 2, mac = "02:00:00:0a:15:07", ip = "10.59.20.20" }
 }
