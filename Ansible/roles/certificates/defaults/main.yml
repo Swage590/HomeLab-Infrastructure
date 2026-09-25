@@ -1,3 +1,4 @@
 certificates_ca_address_or_ip: 127.0.0.1
 certificates_fingerprint: YOUR_FINGERPRINT_HERE
 certificates_provisioner_password: password
+cert_authority_key: ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBOyTirJkcPzrAGHmX1+0La837KDfoF5Kh1hS1NY4kp28zBdj0oJwLtWTCC9iY4C6UZ0zbSM2GA4MD3JhhixSP+U=

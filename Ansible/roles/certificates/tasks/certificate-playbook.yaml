@@ -51,11 +51,16 @@
     path: /root/.step/config/defaults.json
   register: ca_config_stat
 
-- name: Ensure Step CA is Boostrapped
+- name: Set Step CLI binary name
+  ansible.builtin.set_fact:
+    step_bin: "{{ 'step-cli' if ansible_os_family == 'Archlinux' else 'step' }}"
+
+- name: Ensure Step CA is Bootstrapped
   ansible.builtin.command: >
-    step ca bootstrap
+    {{ step_bin }} ca bootstrap
     --ca-url https://{{ certificates_ca_address_or_ip }}:9000
     --fingerprint {{ certificates_fingerprint }}
+    --force
   when: not ca_config_stat.stat.exists
 
 - name: Create systemd service for certificate renewal
@@ -90,7 +95,7 @@
   when: ssh_cert_info.rc == 0
 
 - name: Check if SSH host certificate needs renewal
-  ansible.builtin.command: step ssh needs-renewal /etc/ssh/ssh_host_ecdsa_key-cert.pub
+  ansible.builtin.command: '{{ step_bin }} ssh needs-renewal /etc/ssh/ssh_host_ecdsa_key-cert.pub'
   register: ssh_cert_renewal
   failed_when: ssh_cert_renewal.rc not in [0, 1]
   changed_when: false
@@ -98,7 +103,7 @@
 
 - name: Generate SSH host certificate
   ansible.builtin.command: >
-    step ssh certificate
+    {{ step_bin }} ssh certificate
     {{ ansible_facts['fqdn'] | lower }}
     /etc/ssh/ssh_host_ecdsa_key
     --principal {{ ansible_facts['hostname'] | lower }}
@@ -108,11 +113,6 @@
     --provisioner-password-file /root/.provisioner-password
   notify: Restart SSH
   when: not cert_has_principals | default(false) or ssh_cert_renewal.rc | default(1) == 0
-
-- name: Determine step binary path
-  ansible.builtin.command: command -v step
-  register: step_binary
-  changed_when: false
 
 - name: Create systemd service for certificate renewal
   ansible.builtin.copy:
@@ -124,7 +124,7 @@
 
       [Service]
       Type=oneshot
-      ExecStart={{ step_binary.stdout }} ssh certificate {{ ansible_facts['fqdn'] | lower }} /etc/ssh/ssh_host_ecdsa_key \
+      ExecStart={{ step_bin }} ssh certificate {{ ansible_facts['fqdn'] | lower }} /etc/ssh/ssh_host_ecdsa_key \
         --principal {{ ansible_facts['hostname'] | lower }} \
         --principal {{ ansible_facts['fqdn'] | lower }} \
         --provisioner swage-jwk-provisioner \
@@ -162,7 +162,7 @@
 
 - name: Add cert-authority to known_hosts
   ansible.builtin.lineinfile:
-    path: ~/.ssh/known_hosts
-    line: '@cert-authority * ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBOyTirJkcPzrAGHmX1+0La837KDfoF5Kh1hS1NY4kp28zBdj0oJwLtWTCC9iY4C6UZ0zbSM2GA4MD3JhhixSP+U='
+    path: /home/{{ ansible_facts['user_id'] }}/.ssh/known_hosts
+    line: '@cert-authority * {{ cert_authority_key }}'
     create: yes
     mode: '0600'
