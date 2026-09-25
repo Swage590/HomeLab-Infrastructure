@@ -7,6 +7,7 @@ variable "vms" {
     memory       = number
     mac          = string
     ip           = string
+    ha           = optional(bool)
     datastore_id = optional(string)
     datastore    = optional(string)
   }))
@@ -25,7 +26,7 @@ variable "cloud_image_file_name" {
 }
 
 variable "cloud_image_datastore_id" {
-  description = "The datastore where cloud images will be stored (must support ISO/image content type)"
+  description = "Datastore where the base cloud image is stored"
   type        = string
   default     = "local"
 }
@@ -36,30 +37,57 @@ variable "domain" {
   default     = "Swage"
 }
 
+# --- Storage Defaults ---
 variable "default_vm_datastore_id" {
-  description = "Default datastore for VM disks (used by default for new VMs)"
+  description = "Shared Ceph pool for HA VM disks and EFI"
   type        = string
   default     = "ceph-vm-pool"
 }
 
 variable "local_vm_datastore_id" {
-  description = "Datastore for local storage VMs (e.g. Shadow VMs)"
+  description = "Host-local storage for pinned VMs"
   type        = string
   default     = "local-lvm"
 }
 
-locals {
-  unique_nodes = toset([for vm in var.vms : coalesce(vm.node_name, vm.node, "knight")])
+variable "shared_snippets_datastore_id" {
+  description = "Cluster-wide shared datastore (CephFS/NFS) for HA cloud-init snippets"
+  type        = string
+  default     = "cephfs" # Adjust to match your shared snippets-capable storage
+}
 
+locals {
+  # Flag HA vs Local: explicit flag if defined, otherwise infer from "Shadow-" prefix
+  is_ha = {
+    for k, vm in var.vms : k => coalesce(
+      vm.ha,
+      !startswith(coalesce(vm.name, k), "Shadow-")
+    )
+  }
+
+  # Datastore for VM OS disk and EFI disk
   vm_datastores = {
     for k, vm in var.vms : k => coalesce(
       vm.datastore_id,
       vm.datastore,
-      startswith(coalesce(vm.name, k), "Shadow-") ? var.local_vm_datastore_id : var.default_vm_datastore_id
+      local.is_ha[k] ? var.default_vm_datastore_id : var.local_vm_datastore_id
     )
   }
+
+  # Datastore for cloud-init snippets (Local storage for Shadow VMs, Shared for HA)
+  snippet_datastores = {
+    for k, vm in var.vms : k => local.is_ha[k] ? var.shared_snippets_datastore_id : "local"
+  }
+
+  # Initial host placement
+  vm_nodes = {
+    for k, vm in var.vms : k => coalesce(vm.node_name, vm.node, "knight")
+  }
+
+  unique_nodes = toset(values(local.vm_nodes))
 }
 
+# Base OS image cached on each target host's local datastore
 resource "proxmox_virtual_environment_download_file" "ubuntu_cloud_image" {
   for_each = local.unique_nodes
 
@@ -74,7 +102,7 @@ resource "proxmox_virtual_environment_download_file" "ubuntu_cloud_image" {
 }
 
 data "unifi_network" "lan" {
-  name = "Sandbox" # this must match the name of your LAN network in the UniFi controller
+  name = "Sandbox"
 }
 
 resource "unifi_user" "client" {
@@ -88,11 +116,12 @@ resource "unifi_user" "client" {
   local_dns_record = "${each.value.name}.${var.domain}"
 }
 
+# Cloud-Init Snippet
 resource "proxmox_virtual_environment_file" "user_data" {
   for_each     = var.vms
   content_type = "snippets"
-  datastore_id = "local"
-  node_name    = coalesce(each.value.node_name, each.value.node, "knight")
+  datastore_id = local.snippet_datastores[each.key]
+  node_name    = local.vm_nodes[each.key]
 
   source_raw {
     data = templatefile("${path.module}/user-data.yml.tftpl", {
@@ -106,12 +135,13 @@ resource "proxmox_virtual_environment_file" "user_data" {
   }
 }
 
+# Virtual Machines
 resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   for_each = var.vms
 
   name        = each.value.name
-  description = "[Proxmox] Created by Terraform"
-  node_name   = coalesce(each.value.node_name, each.value.node, "knight")
+  description = local.is_ha[each.key] ? "[Proxmox HA] Managed by Terraform" : "[Proxmox Pinned] Managed by Terraform"
+  node_name   = local.vm_nodes[each.key]
   bios        = "ovmf"
 
   agent {
@@ -127,7 +157,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   }
 
   memory {
-    dedicated = each.value.memory * 1024 # Convert GB to MB
+    dedicated = each.value.memory * 1024
   }
 
   efi_disk {
@@ -136,20 +166,24 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     type         = "4m"
   }
 
-  tags = [
+  tags = local.is_ha[each.key] ? [
     "ubuntu",
+    "ha-enabled",
+    "terraform-managed",
+  ] : [
+    "ubuntu",
+    "pinned-host",
     "terraform-managed",
   ]
 
   disk {
     datastore_id = local.vm_datastores[each.key]
-    file_id      = proxmox_virtual_environment_download_file.ubuntu_cloud_image[coalesce(each.value.node_name, each.value.node, "knight")].id
+    file_id      = proxmox_virtual_environment_download_file.ubuntu_cloud_image[local.vm_nodes[each.key]].id
     interface    = "scsi0"
     size         = 100
   }
 
-  boot_order = ["scsi0"]
-
+  boot_order    = ["scsi0"]
   scsi_hardware = "virtio-scsi-pci"
 
   operating_system {
@@ -174,10 +208,9 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     }
   }
 
-lifecycle {
-    # Keep ignoring drift/unmount quirks during normal operations
+  lifecycle {
     ignore_changes = [
-      node_name,
+      node_name, # Essential for HA so Proxmox migration doesn't trigger Terraform drift
       disk[0].datastore_id,
       disk[0].file_id,
       disk[0].size,
@@ -185,24 +218,32 @@ lifecycle {
       initialization[0].ip_config,
     ]
 
-    # Force VM recreation whenever this specific VM's user-data snippet changes
     replace_triggered_by = [
       proxmox_virtual_environment_file.user_data[each.key]
     ]
   }
 }
 
+resource "proxmox_virtual_environment_haresource" "vm_ha" {
+  for_each = {
+    for k, vm in var.vms : k => vm
+    if local.is_ha[k]
+  }
+
+  resource_id = "vm:${proxmox_virtual_environment_vm.ubuntu_vm[each.key].vm_id}"
+  state       = "started"
+  max_relocate = 3
+  max_restart  = 3
+}
+
 resource "onepassword_item" "_1pass_vm_entry" {
   for_each = var.vms
 
-  vault = "lqttkuu6qlvnzrcxpemr6w376i" # Ansible Vault
-
+  vault    = "lqttkuu6qlvnzrcxpemr6w376i"
   category = "login"
 
   lifecycle {
-    ignore_changes = [
-      password,
-    ]
+    ignore_changes = [password]
   }
 
   title      = each.value.name
