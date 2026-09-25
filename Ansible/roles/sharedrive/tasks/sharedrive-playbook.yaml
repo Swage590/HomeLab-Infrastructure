@@ -49,6 +49,16 @@
     group: root
     mode: '0755'
 
+- name: Reduce systemd default stop timeouts on VMs
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^#?{{ item.key }}='
+    line: '{{ item.key }}={{ item.value }}'
+    state: present
+  loop:
+    - { key: 'DefaultTimeoutStopSec', value: '15s' }
+    - { key: 'DefaultDeviceTimeoutSec', value: '10s' }
+
 - name: Create systemd mount unit for CephFS
   become: true
   notify:
