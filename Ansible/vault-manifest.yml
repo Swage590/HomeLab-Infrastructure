@@ -25,6 +25,11 @@ groups:
     cephfs_sharedrive_name: "op://Home Lab/CephFS - ShareDrive Client Key/username"
     cephfs_name: "op://Home Lab/CephFS/name"
     cephfs_endpoints: "op://Home Lab/CephFS/endpoints"
+    smb_user_password: "op://Home Lab/Samba Server/password"
+    smb_user_name: "op://Home Lab/Samba Server/username"
+    smb_share_path: "op://Home Lab/Samba Server/path"
+    smb_share_name: "op://Home Lab/Samba Server/name"
+    smb_share_comment: "op://Home Lab/Samba Server/comment"
 
 # Host variables template: applied to each host discovered in the inventory
 hosts:

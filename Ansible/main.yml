@@ -23,9 +23,18 @@
     - role: docker
       become: true
       tags: docker
+    
+
+- hosts: storage, general, client-machines
+  roles:
     - role: sharedrive
       become: true
       tags: sharedrive
+
+- hosts: storage
+  roles:
+    - role: smb-server
+      tags: smb-server
 
 # Dependant Configurations
 

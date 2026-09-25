@@ -1,5 +1,5 @@
 ---
 collections:
-  # Core Docker support (for docker_compose_v2 and other modules)
-  - name: community.docker
-
+  - name: community.docker # For Docker-Compose Modules mainly
+  - name: vladgh.samba # Samba Server Deployment
+  - name: kewlfft.aur # For AUR Packages on Arch

@@ -1,0 +1,119 @@
+- name: Ensure Samba packages are installed
+  become: true
+  ansible.builtin.package:
+    name: "{{ smb_packages }}"
+    state: present
+
+- name: Ensure share mount point directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ smb_share_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Check if share path is an active mount point
+  ansible.builtin.command:
+    cmd: "mountpoint -q {{ smb_share_path }}"
+  register: smb_mountpoint_check
+  failed_when: false
+  changed_when: false
+
+- name: Attempt to activate systemd mount unit if unmounted
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ (smb_share_path | regex_replace('^/', '') | regex_replace('/', '-')) }}.mount"
+    state: started
+  when: smb_mountpoint_check.rc != 0
+  failed_when: false
+
+- name: Re-check if share path is mounted
+  ansible.builtin.command:
+    cmd: "mountpoint -q {{ smb_share_path }}"
+  register: smb_mountpoint_recheck
+  when: smb_mountpoint_check.rc != 0
+  failed_when: false
+  changed_when: false
+
+- name: Warn if share path is not an active mount point
+  ansible.builtin.debug:
+    msg: "Warning: '{{ smb_share_path }}' is not detected as an active mount point. Verify that the Kernel or FUSE CephFS mount is active."
+  when:
+    - smb_mountpoint_check.rc != 0
+    - smb_mountpoint_recheck is defined and smb_mountpoint_recheck.rc != 0
+
+- name: Ensure user exists in passwd without overriding login shell
+  ansible.builtin.user:
+    name: "{{ smb_user_name }}"
+    shell: /bin/bash
+    state: present
+
+- name: Check if user exists in Samba passdb
+  become: true
+  ansible.builtin.command:
+    cmd: "pdbedit -u {{ smb_user_name }}"
+  register: smb_user_check
+  changed_when: false
+  failed_when: false
+
+- name: Set or update Samba user password
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      if pdbedit -u "{{ smb_user_name }}" > /dev/null 2>&1; then
+        printf '%s\n%s\n' '{{ smb_user_password }}' '{{ smb_user_password }}' | smbpasswd -s "{{ smb_user_name }}"
+      else
+        printf '%s\n%s\n' '{{ smb_user_password }}' '{{ smb_user_password }}' | smbpasswd -s -a "{{ smb_user_name }}"
+      fi
+  no_log: true
+  changed_when: false
+
+- name: Remove obsolete Ceph VFS options from smb.conf share section
+  become: true
+  ansible.builtin.ini_file:
+    path: /etc/samba/smb.conf
+    section: "{{ smb_share_name }}"
+    option: "{{ item }}"
+    state: absent
+  loop:
+    - "vfs objects"
+    - "ceph:config_file"
+    - "ceph:user_id"
+    - "ceph:keyring"
+  notify: Restart Samba
+
+- name: Configure SMB share for Kernel / FUSE mount with lock bypasses
+  become: true
+  ansible.builtin.ini_file:
+    path: /etc/samba/smb.conf
+    section: "{{ smb_share_name }}"
+    option: "{{ item.key }}"
+    value: "{{ item.value }}"
+    mode: "0644"
+  loop:
+    # General Share Configuration
+    - { key: "comment", value: "{{ smb_share_comment }}" }
+    - { key: "path", value: "{{ smb_share_path }}" }
+    - { key: "browseable", value: "yes" }
+    - { key: "read only", value: "no" }
+    - { key: "writable", value: "yes" }
+    - { key: "guest ok", value: "no" }
+    - { key: "valid users", value: "{{ smb_user_name }}" }
+    - { key: "create mask", value: "0664" }
+    - { key: "directory mask", value: "0775" }
+    # Samba Lock Bypasses for Kernel / FUSE CephFS Mount
+    - { key: "kernel share modes", value: "no" }
+    - { key: "posix locking", value: "no" }
+    - { key: "kernel oplocks", value: "no" }
+    - { key: "strict locking", value: "no" }
+    - { key: "oplocks", value: "no" }
+    - { key: "level2 oplocks", value: "no" }
+  notify: Restart Samba
+
+- name: Ensure Samba service is started and enabled
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ smb_service_name }}"
+    state: started
+    enabled: true

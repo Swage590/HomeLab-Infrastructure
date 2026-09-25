@@ -6,7 +6,7 @@ TARGET_USER="${SUDO_USER:-$USER}"
 USER_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
 
 # Ansible Collections for Installation
-COLLECTION_NAME="kewlfft.aur"
+COLLECTION_NAME="kewlfft.aur community.docker vladgh.samba"
 
 log() {
   echo -e "\033[1;32m[+] $1\033[0m"

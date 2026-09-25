@@ -1,0 +1,17 @@
+smb_user_name: "exampleuser"
+smb_user_password: "password1234"
+
+# Share configuration (scoped to local Kernel or FUSE CephFS mount)
+smb_share_name: "exampleshare"
+smb_share_comment: "Shared Storage"
+smb_share_path: "/mnt/sharedrive"
+
+# Service / Package names (defaults to Debian/Ubuntu, adjusts for RHEL/CentOS)
+# Note: Ceph VFS module is no longer required with Kernel/FUSE mounts
+smb_packages: >-
+  {{
+    ['samba', 'samba-common-bin']
+    if ansible_os_family == 'Debian'
+    else ['samba', 'samba-common']
+  }}
+smb_service_name: "{{ 'smbd' if ansible_os_family == 'Debian' else 'smb' }}"
