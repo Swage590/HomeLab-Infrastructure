@@ -61,15 +61,19 @@
     content: |
       [Unit]
       Description=Mount CephFS {{ cephfs_sharedrive_name }} share
-      After=network-online.target
+      DefaultDependencies=no
+      Conflicts=umount.target
+      Before=umount.target remote-fs.target
+      After=network.target network-online.target systemd-networkd.service NetworkManager.service
       Wants=network-online.target
 
       [Mount]
       What={{ cephfs_sharedrive_name }}@.{{ cephfs_name }}=/{{ cephfs_sharedrive_name }}
       Where=/mnt/{{ cephfs_sharedrive_name }}
       Type=ceph
-      Options=secretfile=/etc/ceph/ceph.client.{{ cephfs_sharedrive_name }}.secret,_netdev
-      TimeoutSec=30
+      Options=secretfile=/etc/ceph/ceph.client.{{ cephfs_sharedrive_name }}.secret,_netdev,abort_on_full
+      TimeoutSec=15
+      TimeoutCleanSec=10
 
       [Install]
-      WantedBy=multi-user.target
+      WantedBy=remote-fs.target multi-user.target
